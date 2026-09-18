@@ -84,8 +84,6 @@ from numpy import (
     pi as pi,
 )
 
-from finch.finch_fused import jit
-
 from . import linalg
 from ._array_api_info import __array_namespace_info__
 from .compiled import (
@@ -117,6 +115,7 @@ from .dtypes import (
     uint32,
     uint64,
 )
+from .finch_fused import jit
 from .io import (
     read,
     write,
