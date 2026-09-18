@@ -84,6 +84,8 @@ from numpy import (
     pi as pi,
 )
 
+from finch.finch_fused import jit
+
 from . import linalg
 from ._array_api_info import __array_namespace_info__
 from .compiled import (
@@ -292,6 +294,7 @@ __all__ = [
     "isfinite",
     "isinf",
     "isnan",
+    "jit",
     "lazy",
     "less",
     "less_equal",
