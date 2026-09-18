@@ -1,6 +1,9 @@
+from pathlib import Path
+
 import pytest
 
 import numpy as np
+from numpy.testing import assert_allclose
 
 
 def pytest_addoption(parser):
@@ -47,3 +50,16 @@ def arr3d():
             [[0, 0, 0, 0], [1, 5, 0, 3]],
         ]
     )
+
+
+@pytest.fixture(scope="session")
+def original_datadir() -> Path:
+    return Path(__file__).parent / "reference"
+
+
+def finch_assert_allclose(result, expected, **kwargs):
+    if hasattr(result, "to_numpy"):
+        result = result.to_numpy()
+    if hasattr(expected, "to_numpy"):
+        expected = expected.to_numpy()
+    assert_allclose(result, expected, **kwargs)
