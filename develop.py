@@ -41,7 +41,9 @@ if args.restore:
         shutil.copy(backup_file, source_file)
         print("Restored src/galley_jl_python/juliapkg.json from backup.")
     except FileNotFoundError:
-        print("Error: Backup file src/galley_jl_python/juliapkg.json.orig does not exist.")
+        print(
+            "Error: Backup file src/galley_jl_python/juliapkg.json.orig does not exist."
+        )
     except (OSError, PermissionError) as e:
         print(f"An error occurred: {e}")
     exit()
