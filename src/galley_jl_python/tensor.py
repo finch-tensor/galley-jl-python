@@ -651,9 +651,9 @@ class Tensor(_Display, SparseArray):
 
         if api_version not in {"2021.12", "2022.12", "2023.12", "2024.12"}:
             raise ValueError(f'"{api_version}" Array API version not supported.')
-        import finch
+        import galley_jl_python
 
-        return finch
+        return galley_jl_python
 
 
 def random(shape, density=0.01, random_state=None):
@@ -1362,9 +1362,9 @@ def einop(prgm, **kwargs):
         >>> # Min-Plus multiplication with shift
         >>> E = finch.einop("E[i] min= A[i,k] + D[k,j] << 1", A=A, D=D)
     """
-    import finch
+    import galley_jl_python
 
-    return einop_impl(finch, prgm, **kwargs)
+    return einop_impl(galley_jl_python, prgm, **kwargs)
 
 
 def einsum(*args, **kwargs):
@@ -1616,9 +1616,9 @@ def einsum(*args, **kwargs):
     array([[10, 28, 46, 64],
            [13, 40, 67, 94]])
     """
-    import finch
+    import galley_jl_python
 
-    return einsum_impl(finch, *args)
+    return einsum_impl(galley_jl_python, *args)
 
 
 def _is_scipy_sparse_obj(x):

@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-import finch
+import galley_jl_python as finch
 
 
 @pytest.fixture

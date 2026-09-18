@@ -5,7 +5,7 @@ from numpy.testing import assert_equal
 
 import sparse
 
-import finch
+import galley_jl_python as finch
 
 parametrize_optimizer = pytest.mark.parametrize(
     "opt", [finch.DefaultScheduler(), finch.GalleyScheduler()]

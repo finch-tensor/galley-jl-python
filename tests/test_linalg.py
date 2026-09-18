@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_allclose
 
-import finch
+import galley_jl_python as finch
 
 arr1d = np.array([1, -1, 2, 3])
 arr2d = np.array([[1, 2, 0, 4, 0], [0, -2, 1, 0, 1]])
