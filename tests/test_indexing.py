@@ -5,7 +5,7 @@ from numpy.testing import assert_equal
 
 import juliacall as jc
 
-import finch
+import galley_jl_python as finch
 
 
 @pytest.mark.parametrize(

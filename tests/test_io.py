@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-import finch
+import galley_jl_python as finch
 
 base_path = "tests/data"
 

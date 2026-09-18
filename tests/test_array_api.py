@@ -139,7 +139,11 @@ def test_array_api(request):
             "--skips-file",
             ARRAY_API_TESTS_SKIPS,
         ],
-        env={**os.environ, "ARRAY_API_TESTS_MODULE": "finch", "PYTHONUNBUFFERED": "1"},
+        env={
+            **os.environ,
+            "ARRAY_API_TESTS_MODULE": "galley_jl_python",
+            "PYTHONUNBUFFERED": "1",
+        },
         check=False,
         text=True,
     )

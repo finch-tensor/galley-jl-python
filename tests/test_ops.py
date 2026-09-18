@@ -7,7 +7,7 @@ from numpy.testing import assert_allclose, assert_equal
 
 import juliacall as jc
 
-import finch
+import galley_jl_python as finch
 
 arr1d = np.array([1, 1, 2, 3])
 arr2d = np.array([[1, 2, 0, 0], [0, 1, 0, 1]])
