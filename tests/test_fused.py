@@ -16,7 +16,6 @@ from finch.autoschedule import (
     LogicExecutor,
     LogicNormalizer,
 )
-from galley_jl_python import jit
 from finch.finch_fused import nodes as fzd
 from finch.finch_fused.cfg_builder import (
     fused_build_cfg,
@@ -36,6 +35,8 @@ from finch.finch_notation.interpreter import NotationInterpreter
 from finch.interface import add, asarray, matmul, sum
 from finch.interface.lazy import LazyTensor
 from finch.tensor.scalar import ConstantScalar, ScalarFType
+
+from galley_jl_python import jit
 
 from .conftest import finch_assert_allclose
 
