@@ -28,11 +28,36 @@ test = [
     "hypothesis (>=6.151.9,<7.0.0)",
     "ndindex (>=1.10.1,<2.0.0)",
     "pytest-json-report (>=1.5.0,<2.0.0)",
+    "pytest-xdist>=3.6.1,<4",
 ]
 
 [build-system]
 requires = ["poetry-core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = [
+    { name = "linux-amd64", platform = "linux-64", glibc = "2.34" },
+    { name = "linux-arm64", platform = "linux-aarch64", glibc = "2.34" },
+    { name = "macos-arm64", platform = "osx-arm64", macos = "15.0" },
+    { name = "win-amd64", platform = "win-64" },
+]
+
+[tool.pixi.dependencies]
+python = ">=3.11,<3.13"
+
+[tool.pixi.pypi-dependencies]
+galley-jl-python = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+compile = "python -c 'import galley_jl_python'"
+
+[tool.pixi.feature.test.tasks]
+test = { cmd = "pytest", depends-on = ["compile"] }
+
+[tool.pixi.environments]
+test = { features = ["test"], solve-group = "default" }
 
 [tool.ruff]
 line-length = 88
