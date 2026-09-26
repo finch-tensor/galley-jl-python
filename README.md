@@ -108,10 +108,17 @@ On successful execution, the action publishes the package to PyPI and tags the r
 
 ### Pre-commit hooks
 
-To add pre-commit hooks, run:
+The hooks run in their own `pre-commit` environment, which doesn't install
+galley's dependencies or Julia.
+
 ```bash
-pixi run -e test pre-commit install
+pixi run pre-commit-install   # run the hooks on every `git commit`
+pixi run pre-commit           # run every hook on every file now
+pixi run pre-commit ruff      # the same, skipping the listed hook ids
 ```
+
+To run a single hook, use `pixi shell -e pre-commit` and then
+`pre-commit run <hook-id> -a`.
 
 ### Testing
 

@@ -6,6 +6,12 @@ array_api_tests/test_special_cases.py::test_unary[sign((x_i is -0 or x_i == +0))
 array_api_tests/test_searching_functions.py::test_where
 # `test_solve` is not defined in Finch, hangs as xfail
 array_api_tests/test_linalg.py::test_solve
+# Galley drops the array's shape for `x & False`, `x * 0` and other annihilating
+# constants (https://github.com/finch-tensor/Finch.jl/issues/820), and binary
+# functions don't accept a scalar as the first argument. Remove these once both
+# are fixed.
+array_api_tests/test_operators_and_elementwise_functions.py::test_binary_with_scalars_bool[logical_and]
+array_api_tests/test_operators_and_elementwise_functions.py::test_binary_with_scalars_bitwise[bitwise_and]
 
 # test_signatures
 

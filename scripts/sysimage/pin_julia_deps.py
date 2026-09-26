@@ -55,7 +55,7 @@ def main() -> None:
         packages[name] = {"uuid": entry["uuid"], "version": f"={version}"}
     config["packages"] = packages
 
-    JULIAPKG_JSON.write_text(json.dumps(config, indent=2) + "\n")
+    JULIAPKG_JSON.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n")
     print(
         f"pinned julia {config['julia']} and {len(packages)} packages "
         f"({len(git_pinned)} to git commits: {', '.join(git_pinned) or 'none'})"

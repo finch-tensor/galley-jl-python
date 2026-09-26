@@ -21,7 +21,6 @@ requires-poetry = ">=2.0,<3.0"
 [project.optional-dependencies]
 test = [
     "pytest>=7.4.4,<7.6",
-    "pre-commit>=3.6.0,<3.9",
     "pytest-cov>=4.1.0,<4.2",
     "sparse>=0.17.0,<0.17.1",
     "scipy>=1.7,<1.17",
@@ -83,6 +82,20 @@ default-environment = "test"
 cmd = "pytest tests/test_array_api.py --no-cov --junitxml=junit/array-api-results.xml --array-api='-n {{ njobs }}'"
 depends-on = ["compile"]
 
+# Hooks run in their own environment, without galley's dependencies or Julia.
+[tool.pixi.feature.pre-commit.dependencies]
+pre-commit = "*"
+
+[tool.pixi.feature.pre-commit.tasks]
+pre-commit-install = "pre-commit install"
+
+# `pixi run pre-commit [skip]` runs every hook on every file; `skip` is a
+# comma-separated list of hook ids to leave out.
+[tool.pixi.feature.pre-commit.tasks.pre-commit]
+args = [{ arg = "skip", default = "" }]
+env = { SKIP = "{{ skip }}" }
+cmd = "pre-commit run -a"
+
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
@@ -97,6 +110,7 @@ test = { features = ["test"], solve-group = "default" }
 test-py311 = ["test", "py311"]
 test-py312 = ["test", "py312"]
 test-py313 = ["test", "py313"]
+pre-commit = { features = ["pre-commit"], no-default-feature = true }
 
 [tool.ruff]
 line-length = 88
