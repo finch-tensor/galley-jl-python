@@ -45,7 +45,7 @@ platforms = [
 ]
 
 [tool.pixi.dependencies]
-python = ">=3.11,<3.13"
+python = ">=3.11,<3.14"
 
 [tool.pixi.pypi-dependencies]
 galley-jl-python = { path = ".", editable = true }
@@ -59,8 +59,20 @@ fetch-sysimage = "python scripts/sysimage/fetch.py"
 [tool.pixi.feature.test.tasks]
 test = { cmd = "pytest", depends-on = ["compile"] }
 
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
+test-py311 = ["test", "py311"]
+test-py312 = ["test", "py312"]
+test-py313 = ["test", "py313"]
 
 [tool.ruff]
 line-length = 88

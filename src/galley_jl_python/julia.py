@@ -1,4 +1,5 @@
 import juliapkg  # noqa: I001, F401
+from pathlib import Path
 
 from . import _sysimage
 
@@ -14,6 +15,7 @@ import juliacall as jc  # noqa: E402, F401
 from juliacall import Main as jl  # noqa: E402, F401
 
 jl.seval("using Finch")
+jl.Base.include(jl.Finch.Galley, str(Path(__file__).with_name("finch_patches.jl")))
 jl.seval("using HDF5")
 jl.seval("using NPZ")
 jl.seval("using TensorMarket")
