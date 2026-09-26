@@ -16,18 +16,35 @@ pip install galley-jl-python
 
 ## Contributing
 
-### Packaging
+### Development environment
 
-Galley uses [poetry](https://python-poetry.org/) for packaging.
+Galley uses [pixi](https://pixi.sh) for development. All configuration lives in
+`pyproject.toml`: the package metadata and dependencies are under `[project]`,
+and pixi's settings are under `[tool.pixi]`.
 
-To install for development, clone the repository and run:
+To set up, clone the repository and run:
 ```bash
-poetry install --with test
+pixi install          # the default environment
+pixi install -e test  # adds the test dependencies (the `test` extra)
 ```
-to install the current project and dev dependencies.
+
+pixi installs the package in editable mode. Julia is not a pixi dependency:
+[juliapkg](https://github.com/JuliaPy/pyjuliapkg) installs the pinned Julia
+version and packages the first time `galley_jl_python` is imported. To trigger
+that, and to fetch the sysimage (see below), run:
+```bash
+pixi run compile
+```
+
+Run any other command inside an environment with `pixi run`, for example
+`pixi run -e test python`.
+
+The package is still built and published with Poetry (see
+[Publishing](#publishing)).
 
 ### Working with a local copy of Finch.jl
-The `develop.py ` script can be used to set up a local copy of Finch.jl for development.
+The `develop.py` script can be used to set up a local copy of Finch.jl for
+development. Run it with `pixi run python develop.py`.
 
 ```
 Usage:
@@ -93,16 +110,24 @@ On successful execution, the action publishes the package to PyPI and tags the r
 
 To add pre-commit hooks, run:
 ```bash
-poetry run pre-commit install
+pixi run -e test pre-commit install
 ```
 
 ### Testing
 
-Finch uses [pytest](https://docs.pytest.org/en/latest/) for testing. To run the
+Galley uses [pytest](https://docs.pytest.org/en/latest/) for testing. To run the
 tests:
 
 ```bash
-poetry run pytest
+pixi run test
+```
+
+This runs `compile` first and then the full suite, including the Array API
+tests described below. To run a subset, call pytest in the test environment
+directly:
+
+```bash
+pixi run -e test pytest tests/test_fused.py
 ```
 
 Array API tests are included in `tests/test_array_api.py`. These tests invoke
@@ -112,7 +137,7 @@ To forward `pytest` options to the nested
 `--array-api-pytest-args`):
 
 ```bash
-poetry run pytest tests/test_array_api.py \
+pixi run -e test pytest tests/test_array_api.py \
     --array-api="-k creation_functions" \
     --array-api="-x"
 ```
