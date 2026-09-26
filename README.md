@@ -1,24 +1,24 @@
-# finch-tensor
+# galley-jl-python
 
 This is the beginnings of a sparse tensor library for Python, backed by the
 [Finch.jl](https://github.com/finch-tensor/Finch.jl) tensor compiler.
 
 ## Source
 
-The source code for `finch-tensor` is available on GitHub at [https://github.com/finch-tensor/finch-tensor](https://github.com/FinchTensor/finch-tensor)
+The source code for `galley-jl-python` is available on GitHub at [https://github.com/finch-tensor/galley-jl-python](https://github.com/finch-tensor/galley-jl-python).
 
 ## Installation
 
-`finch-tensor` is available on PyPi, and can be installed with pip:
+`galley-jl-python` is available on PyPI, and can be installed with pip:
 ```bash
-pip install finch-tensor
+pip install galley-jl-python
 ```
 
 ## Contributing
 
 ### Packaging
 
-Finch uses [poetry](https://python-poetry.org/) for packaging.
+Galley uses [poetry](https://python-poetry.org/) for packaging.
 
 To install for development, clone the repository and run:
 ```bash

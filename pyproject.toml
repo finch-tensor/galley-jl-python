@@ -1,5 +1,5 @@
 [project]
-name = "finch-tensor"
+name = "galley-jl-python"
 version = "0.2.14"
 description = "Sparse Tensor Programming in Python powered by Finch.jl"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "finch", from = "src"}]
+packages = [{include = "galley_jl_python", from = "src"}]
 requires-poetry = ">=2.0,<3.0"
 
 [project.optional-dependencies]

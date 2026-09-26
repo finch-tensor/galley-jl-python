@@ -6,8 +6,8 @@ import shutil
 import juliapkg
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-source_file = os.path.join(script_dir, "src/finch/juliapkg.json")
-backup_file = os.path.join(script_dir, "src/finch/juliapkg.json.orig")
+source_file = os.path.join(script_dir, "src/galley_jl_python/juliapkg.json")
+backup_file = os.path.join(script_dir, "src/galley_jl_python/juliapkg.json.orig")
 
 # Parse command-line arguments
 usage = """
@@ -39,9 +39,11 @@ args = parser.parse_args()
 if args.restore:
     try:
         shutil.copy(backup_file, source_file)
-        print("Restored src/finch/juliapkg.json from backup.")
+        print("Restored src/galley_jl_python/juliapkg.json from backup.")
     except FileNotFoundError:
-        print("Error: Backup file src/finch/juliapkg.json.orig does not exist.")
+        print(
+            "Error: Backup file src/galley_jl_python/juliapkg.json.orig does not exist."
+        )
     except (OSError, PermissionError) as e:
         print(f"An error occurred: {e}")
     exit()
@@ -58,11 +60,11 @@ except (OSError, PermissionError) as e:
 
 # Checkout Finch for development
 
-juliapkg.rm("Finch", target="src/finch/juliapkg.json")
+juliapkg.rm("Finch", target="src/galley_jl_python/juliapkg.json")
 juliapkg.add(
     "Finch",
     "9177782c-1635-4eb9-9bfb-d9dfa25e6bce",
     dev=True,
     path=finch_path,
-    target="src/finch/juliapkg.json",
+    target="src/galley_jl_python/juliapkg.json",
 )

@@ -4,8 +4,8 @@ import numpy as np
 import scipy.sparse as sp
 from numpy.testing import assert_equal
 
-import finch
-from finch.tensor import _eq_scalars
+import galley_jl_python as finch
+from galley_jl_python.tensor import _eq_scalars
 
 
 def test_scipy_coo(arr2d):
