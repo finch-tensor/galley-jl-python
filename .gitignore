@@ -168,3 +168,6 @@ cython_debug/
 .pixi/
 *.egg-info
 pixi.lock
+
+# PackageCompiler environment used by scripts/sysimage/build_sysimage.jl
+scripts/sysimage/.build-env/

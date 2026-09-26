@@ -1,21 +1,385 @@
 {
-  "julia": "1.10 - 1.12",
+  "julia": "=1.12.2",
   "packages": {
+    "AbstractTrees": {
+      "uuid": "1520ce14-60c1-5f80-bbc7-55ef81b5835c",
+      "version": "=0.4.5"
+    },
+    "AcceleratedKernels": {
+      "uuid": "6a4ca0a5-0e36-4168-a932-d9be78d558f1",
+      "version": "=0.4.3"
+    },
+    "Accessors": {
+      "uuid": "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697",
+      "version": "=0.1.45"
+    },
+    "Adapt": {
+      "uuid": "79e6a3ab-5dfb-504d-930d-738a2a938a0e",
+      "version": "=4.7.1"
+    },
+    "AliasTables": {
+      "uuid": "66dad0bd-aa9a-41b7-9441-69ab47430ed8",
+      "version": "=1.1.3"
+    },
+    "ArgCheck": {
+      "uuid": "dce04be8-c92d-5529-be00-80e4d2c0e197",
+      "version": "=2.5.0"
+    },
+    "Atomix": {
+      "uuid": "a9b6321e-bd34-4604-b9c9-b65b8de01458",
+      "version": "=1.2.1"
+    },
+    "AutoHashEquals": {
+      "uuid": "15f4f7f2-30c1-5605-9d31-71845cf9641f",
+      "version": "=2.2.0"
+    },
+    "CommonSolve": {
+      "uuid": "38540f10-b2f7-11e9-35d8-d573e4eb0ff2",
+      "version": "=0.2.14"
+    },
+    "Compat": {
+      "uuid": "34da2185-b29b-5c13-b0c7-acf172513d20",
+      "version": "=4.18.1"
+    },
+    "CompositionsBase": {
+      "uuid": "a33af91c-f02d-484b-be07-31d278c5ca2b",
+      "version": "=0.1.2"
+    },
+    "CondaPkg": {
+      "uuid": "992eb4ea-22a4-4c89-a5bb-47a3300528ab",
+      "version": "=0.2.36"
+    },
+    "ConstructionBase": {
+      "uuid": "187b0558-2788-49d3-abe0-74a17ed4e7c9",
+      "version": "=1.6.0"
+    },
+    "DataAPI": {
+      "uuid": "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a",
+      "version": "=1.16.0"
+    },
+    "DataStructures": {
+      "uuid": "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8",
+      "version": "=0.19.6"
+    },
+    "DataValueInterfaces": {
+      "uuid": "e2d170a0-9d28-54be-80f0-106bbe20a464",
+      "version": "=1.0.0"
+    },
+    "Distributions": {
+      "uuid": "31c24e10-a181-5473-b8eb-7969acd0382f",
+      "version": "=0.25.131"
+    },
+    "DocStringExtensions": {
+      "uuid": "ffbed154-4ef7-542d-bbb7-c09d3a79fcae",
+      "version": "=0.9.5"
+    },
+    "FileIO": {
+      "uuid": "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549",
+      "version": "=1.20.0"
+    },
+    "FillArrays": {
+      "uuid": "1a297f60-69ca-5386-bcde-b61e274b549b",
+      "version": "=1.17.1"
+    },
     "Finch": {
       "uuid": "9177782c-1635-4eb9-9bfb-d9dfa25e6bce",
-      "version": "1.2.10"
+      "version": "=1.6.0"
+    },
+    "GPUArraysCore": {
+      "uuid": "46192b85-c4d5-4398-a991-12ede77f4527",
+      "version": "=0.2.1"
+    },
+    "Gamma": {
+      "uuid": "a0844989-3bd2-4988-8bea-c9407ab0941b",
+      "version": "=1.2.0"
     },
     "HDF5": {
       "uuid": "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f",
-      "version": "0.17.2"
+      "version": "=0.17.4"
+    },
+    "HDF5_jll": {
+      "uuid": "0234f1f7-429e-5d53-9886-15a909be8d59",
+      "version": "=2.2.2"
+    },
+    "Hwloc_jll": {
+      "uuid": "e33a78d0-f292-5ffc-b300-72abe9b543c8",
+      "version": "=2.14.1"
+    },
+    "HypergeometricFunctions": {
+      "uuid": "34004b35-14d8-5ef3-9330-4cdb6864b03a",
+      "version": "=0.3.30"
+    },
+    "InverseFunctions": {
+      "uuid": "3587e190-3f89-42d0-90ee-14403ec27112",
+      "version": "=0.1.17"
+    },
+    "IrrationalConstants": {
+      "uuid": "92d709cd-6900-40b7-9082-c6be49f344b6",
+      "version": "=0.2.6"
+    },
+    "IterTools": {
+      "uuid": "c8e1da08-722c-5040-9ed9-7db0dc04731e",
+      "version": "=1.10.0"
+    },
+    "IteratorInterfaceExtensions": {
+      "uuid": "82899510-4779-5014-852e-03e436cf321d",
+      "version": "=1.0.0"
+    },
+    "JLLWrappers": {
+      "uuid": "692b3bcd-3c85-4b1f-b108-f13ce0eb3210",
+      "version": "=1.8.0"
+    },
+    "JSON": {
+      "uuid": "682c06a0-de6a-54ab-a142-c8b1cf79cde6",
+      "version": "=1.9.0"
+    },
+    "KernelAbstractions": {
+      "uuid": "63c18a36-062a-441e-b654-da1e3ab1ce7c",
+      "version": "=0.9.42"
+    },
+    "Libiconv_jll": {
+      "uuid": "94ce4f54-9a6c-5748-9c1c-f9c7231a4531",
+      "version": "=1.18.0"
+    },
+    "LogExpFunctions": {
+      "uuid": "2ab3a3ac-af41-5b50-aa03-7779005ae688",
+      "version": "=1.0.2"
+    },
+    "MPIABI_jll": {
+      "uuid": "b5ada748-db0f-5fc0-8972-9331c762740c",
+      "version": "=1.0.0"
+    },
+    "MPICH_jll": {
+      "uuid": "7cb0a576-ebde-5e09-9194-50597f1243b4",
+      "version": "=5.0.1"
+    },
+    "MPIPreferences": {
+      "uuid": "3da0fdf6-3ccc-4f1b-acd9-58baa6c99267",
+      "version": "=0.1.12"
+    },
+    "MPItrampoline_jll": {
+      "uuid": "f1f71cc9-e9ae-5b93-9b94-4fe0e1ad3748",
+      "version": "=5.5.6"
+    },
+    "MacroTools": {
+      "uuid": "1914dd2f-81c6-5fcd-8719-6d5c9610ff09",
+      "version": "=0.5.16"
+    },
+    "MicroMamba": {
+      "uuid": "0b3b1443-0f03-428d-bdfb-f27f9c1191ea",
+      "version": "=0.1.15"
+    },
+    "MicrosoftMPI_jll": {
+      "uuid": "9237b28f-5490-5468-be7b-bb81f5f5e6cf",
+      "version": "=10.1.4"
+    },
+    "Missings": {
+      "uuid": "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28",
+      "version": "=1.2.0"
     },
     "NPZ": {
       "uuid": "15e1cf62-19b3-5cfa-8e77-841668bca605",
-      "version": "0.4.3"
+      "version": "=0.4.3"
+    },
+    "OpenMPI_jll": {
+      "uuid": "fe0851c0-eecd-5654-98d4-656369965a5c",
+      "version": "=5.0.12"
+    },
+    "OpenSpecFun_jll": {
+      "uuid": "efe28fd5-8261-553b-a9e1-b2916fc3738e",
+      "version": "=0.5.6"
+    },
+    "OrderedCollections": {
+      "uuid": "bac558e1-5e72-5ebc-8fee-abe8a469f55d",
+      "version": "=2.0.1"
+    },
+    "PDMats": {
+      "uuid": "90014a1f-27ba-587c-ab20-58faa44d9150",
+      "version": "=0.11.41"
+    },
+    "Parsers": {
+      "uuid": "69de0a69-1ddd-5017-9359-2bf0b02dc9f0",
+      "version": "=3.0.0"
+    },
+    "Pidfile": {
+      "uuid": "fa939f87-e72e-5be4-a000-7fc836dbe307",
+      "version": "=1.3.0"
+    },
+    "PrecompileTools": {
+      "uuid": "aea7be01-6a6a-4083-8856-8a6e6704d82a",
+      "version": "=1.3.4"
+    },
+    "Preferences": {
+      "uuid": "21216c6a-2e73-6563-6e65-726566657250",
+      "version": "=1.6.0"
+    },
+    "PtrArrays": {
+      "uuid": "43287f4e-b6f4-7ad1-bb20-aadabca52c3d",
+      "version": "=1.4.0"
+    },
+    "QuadGK": {
+      "uuid": "1fd47b50-473d-5c70-9696-f719f8f3bcdc",
+      "version": "=2.11.3"
+    },
+    "Reexport": {
+      "uuid": "189a3867-3050-52da-a836-e630ba90ab69",
+      "version": "=1.2.2"
+    },
+    "Requires": {
+      "uuid": "ae029012-a4dd-5104-9daa-d747884805df",
+      "version": "=1.3.1"
+    },
+    "RewriteTools": {
+      "uuid": "5969e224-3634-4c61-9f66-721b69e98b8a",
+      "version": "=0.2.4"
+    },
+    "Rmath": {
+      "uuid": "79098fc4-a85e-5d69-aa6a-4863f24498fa",
+      "version": "=0.9.0"
+    },
+    "Rmath_jll": {
+      "uuid": "f50d1b31-88e8-58de-be2c-1cc44531875f",
+      "version": "=0.5.2"
+    },
+    "Roots": {
+      "uuid": "f2b01f46-fcfa-551c-844a-d8ac1e96c665",
+      "version": "=3.0.8"
+    },
+    "Scratch": {
+      "uuid": "6c6a2e73-6563-6170-7368-637461726353",
+      "version": "=1.3.0"
+    },
+    "SortingAlgorithms": {
+      "uuid": "a2af1166-a08f-5f64-846c-94a0d3cef48c",
+      "version": "=1.2.3"
+    },
+    "SpecialFunctions": {
+      "uuid": "276daf66-3868-5448-9aa4-cd146d93841b",
+      "version": "=2.9.0"
+    },
+    "StaticArrays": {
+      "uuid": "90137ffa-7385-5640-81b9-e52037218182",
+      "version": "=1.9.22"
+    },
+    "StaticArraysCore": {
+      "uuid": "1e83bf80-4336-4d27-bf5d-d5a4f845583c",
+      "version": "=1.4.4"
+    },
+    "Statistics": {
+      "uuid": "10745b16-79ce-11e8-11f9-7d13ad32a3b2",
+      "version": "=1.11.5"
+    },
+    "StatsAPI": {
+      "uuid": "82ae8749-77ed-4fe6-ae5f-f523153014b0",
+      "version": "=1.8.0"
+    },
+    "StatsBase": {
+      "uuid": "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91",
+      "version": "=0.34.13"
+    },
+    "StatsFuns": {
+      "uuid": "4c63d2b9-4356-54db-8cca-17b64c39e42c",
+      "version": "=2.2.1"
+    },
+    "StructUtils": {
+      "uuid": "ec057cc2-7a8d-4b58-b3b3-92acb9f63b42",
+      "version": "=2.9.2"
+    },
+    "SyntaxInterface": {
+      "uuid": "b33eeca9-aacb-4496-a840-e75f1646a4fb",
+      "version": "=0.2.1"
+    },
+    "TableTraits": {
+      "uuid": "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c",
+      "version": "=1.0.1"
+    },
+    "Tables": {
+      "uuid": "bd369af6-aec1-5ad0-b16a-f7cc5008161c",
+      "version": "=1.14.0"
     },
     "TensorMarket": {
       "uuid": "8b7d4fe7-0b45-4d0d-9dd8-5cc9b23b4b77",
-      "version": "0.2.0"
+      "version": "=0.2.2"
+    },
+    "UnsafeAtomics": {
+      "uuid": "013be700-e6cd-48c3-b4a1-df204f14c38f",
+      "version": "=0.3.2"
+    },
+    "UnsafePointers": {
+      "uuid": "e17b2a0c-0bdf-430a-bd0c-3a23cae4ff39",
+      "version": "=1.0.0"
+    },
+    "XML2_jll": {
+      "uuid": "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a",
+      "version": "=2.15.4"
+    },
+    "Xorg_libpciaccess_jll": {
+      "uuid": "a65dc6b1-eb27-53a1-bb3e-dea574b5389e",
+      "version": "=0.19.0"
+    },
+    "ZipFile": {
+      "uuid": "a5390f91-8eb1-5f08-bee0-b1d1ffed6cea",
+      "version": "=0.10.1"
+    },
+    "aws_c_auth_jll": {
+      "uuid": "2b3700d1-4306-52e2-a478-c162f0c514be",
+      "version": "=0.9.6"
+    },
+    "aws_c_cal_jll": {
+      "uuid": "70f11efc-bab2-57f1-b0f3-22aad4e67c4b",
+      "version": "=0.9.13"
+    },
+    "aws_c_common_jll": {
+      "uuid": "73048d1d-b8c4-5092-a58d-866c5e8d1e50",
+      "version": "=0.12.6"
+    },
+    "aws_c_compression_jll": {
+      "uuid": "73a04cd5-f3d7-5bac-9290-e8adb709f224",
+      "version": "=0.3.2"
+    },
+    "aws_c_http_jll": {
+      "uuid": "3254fc65-9028-534d-aa9d-d76d128babc6",
+      "version": "=0.10.15"
+    },
+    "aws_c_io_jll": {
+      "uuid": "13c41daa-f319-5298-b5eb-5754e0170d52",
+      "version": "=0.26.3"
+    },
+    "aws_c_s3_jll": {
+      "uuid": "bd1f34fb-993f-5903-a121-aaf302eed6d4",
+      "version": "=0.11.5"
+    },
+    "aws_c_sdkutils_jll": {
+      "uuid": "1282aa60-004d-510b-9f52-12498d409daa",
+      "version": "=0.2.4"
+    },
+    "aws_checksums_jll": {
+      "uuid": "b2a88e68-78e7-5e94-8c20-c02986ec140e",
+      "version": "=0.2.10"
+    },
+    "dlfcn_win32_jll": {
+      "uuid": "c4b69c83-5512-53e3-94e6-de98773c479f",
+      "version": "=1.4.2"
+    },
+    "libaec_jll": {
+      "uuid": "477f73a3-ac25-53e9-8cc3-50b2fa2566f0",
+      "version": "=1.1.7"
+    },
+    "micromamba_jll": {
+      "uuid": "f8abcde7-e9b7-5caa-b8af-a437887ae8e4",
+      "version": "=2.3.1"
+    },
+    "mpif_jll": {
+      "uuid": "9aeb927a-4695-514f-a259-621a69f20ec0",
+      "version": "=1.0.0"
+    },
+    "pixi_jll": {
+      "uuid": "4d7b5844-a134-5dcd-ac86-c8f19cd51bed",
+      "version": "=0.76.2"
+    },
+    "s2n_tls_jll": {
+      "uuid": "cddc5d3d-934d-5d3a-9747-62fc12ea3f48",
+      "version": "=1.7.10"
     }
   }
 }
