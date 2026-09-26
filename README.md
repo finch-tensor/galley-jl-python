@@ -38,6 +38,36 @@ Options:
     --path      Path to the local copy of Finch.jl [default: ../Finch.jl].
 ```
 
+### Julia sysimage
+
+Most of Galley's startup time is Julia compiling Finch itself. A prebuilt Julia
+sysimage removes it: the first operations of a session drop from minutes to a
+few seconds.
+
+- `pixi run fetch-sysimage` downloads the image for your platform into
+  `~/.cache/galley-jl-python/` (`GALLEY_JL_PYTHON_CACHE` overrides this).
+  `pixi run compile` and `pixi run test` run this step first.
+- `pixi run build-sysimage` builds the image locally instead. This takes hours.
+- `import galley_jl_python` loads a cached image automatically when it matches
+  the current Julia environment. Otherwise Julia starts without it. Set
+  `GALLEY_JL_PYTHON_SYSIMAGE=0` to turn this off.
+
+An image works only with the exact Julia and package versions it was built
+from. For this reason `src/galley_jl_python/juliapkg.json` pins Julia and every
+Julia package. Each image's name includes a hash of that environment. A local
+Finch.jl from `develop.py` therefore runs without the image.
+
+To update the Julia dependencies:
+
+1. Loosen the pins you want to change.
+2. Resolve with `pixi run compile`.
+3. Re-pin with `python scripts/sysimage/pin_julia_deps.py`.
+
+Pushing the new pins to `main` runs the "Sysimage" GitHub Action. It builds
+images for Linux, macOS and Windows and publishes them to a `sysimage-<hash>`
+GitHub release, where `fetch-sysimage` finds them. The action can also be run
+manually from the Actions tab.
+
 ### Publishing
 
 The "Publish" GitHub Action is a manual workflow for publishing Python packages to PyPI using Poetry. It handles the version management based on the `pyproject.toml` file and automates tagging and creating GitHub releases.

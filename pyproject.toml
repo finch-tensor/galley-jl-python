@@ -51,7 +51,10 @@ python = ">=3.11,<3.13"
 galley-jl-python = { path = ".", editable = true }
 
 [tool.pixi.tasks]
-compile = "python -c 'import galley_jl_python'"
+# pixi has no post-install hook, so the entry-point tasks fetch the sysimage
+compile = { cmd = "python -c 'import galley_jl_python'", depends-on = ["fetch-sysimage"] }
+build-sysimage = "python scripts/sysimage/build.py"
+fetch-sysimage = "python scripts/sysimage/fetch.py"
 
 [tool.pixi.feature.test.tasks]
 test = { cmd = "pytest", depends-on = ["compile"] }
