@@ -115,6 +115,7 @@ from .dtypes import (
     uint32,
     uint64,
 )
+from .finch_fused import jit
 from .io import (
     read,
     write,
@@ -292,6 +293,7 @@ __all__ = [
     "isfinite",
     "isinf",
     "isnan",
+    "jit",
     "lazy",
     "less",
     "less_equal",

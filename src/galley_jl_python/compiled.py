@@ -141,6 +141,9 @@ def set_optimizer(opt: AbstractScheduler) -> None:
     jl.Finch.set_scheduler_b(opt.get_julia_scheduler())
 
 
+set_optimizer(GalleyScheduler())
+
+
 def lazy(tensor: Tensor) -> Tensor:
     from .tensor import Tensor
 

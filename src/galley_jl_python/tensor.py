@@ -25,6 +25,11 @@ from .levels import (
 )
 from .typing import Device, DType, JuliaObj, OrderType, TupleOf3Arrays, spmatrix
 
+# Builds a 0-d Finch tensor in Julia so the element keeps its Julia eltype.
+_scalar_to_0d = jl.seval(
+    "(T, fv, x) -> Finch.Tensor(Finch.Element{convert(T, fv)}(T[convert(T, x)]))"
+)
+
 
 class SparseArray:
     """
@@ -279,7 +284,8 @@ class Tensor(_Display, SparseArray):
             return Tensor(result)
         if jl.isa(result, jl.Finch.Tensor):
             return Tensor(jl.swizzle(result, *range(1, jl.ndims(result) + 1)))
-        return result
+        # the Array API requires a 0-d array, not a scalar, for integer-only keys
+        return Tensor(jl.swizzle(_scalar_to_0d(self.dtype, self.fill_value, result)))
 
     @property
     def dtype(self) -> DType:
