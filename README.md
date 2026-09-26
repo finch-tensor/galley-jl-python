@@ -119,12 +119,20 @@ Galley uses [pytest](https://docs.pytest.org/en/latest/) for testing. To run the
 tests:
 
 ```bash
-pixi run test
+pixi run test      # one pytest-xdist worker per CPU
+pixi run test 4    # or a fixed number of workers
 ```
 
-This runs `compile` first and then the full suite, including the Array API
-tests described below. To run a subset, call pytest in the test environment
-directly:
+This runs `compile` first, then two suites one after the other, each spread
+over the workers:
+
+- `pixi run test-unit` runs the unit tests.
+- `pixi run test-array-api` runs the Array API tests described below.
+
+Each worker is a separate Julia process that uses 1–2 GB of memory, so lower
+the worker count on machines with little memory.
+
+To run a subset, call pytest in the test environment directly:
 
 ```bash
 pixi run -e test pytest tests/test_fused.py

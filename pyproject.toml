@@ -56,8 +56,32 @@ compile = { cmd = "python -c 'import galley_jl_python'", depends-on = ["fetch-sy
 build-sysimage = "python scripts/sysimage/build.py"
 fetch-sysimage = "python scripts/sysimage/fetch.py"
 
-[tool.pixi.feature.test.tasks]
-test = { cmd = "pytest", depends-on = ["compile"] }
+# `pixi run test [njobs]` runs both suites, one after the other, each spread
+# over `njobs` pytest-xdist workers (default: one per CPU).
+[tool.pixi.feature.test.tasks.test]
+args = [{ arg = "njobs", default = "auto" }]
+# a no-op cmd, since `default-environment` is only allowed on tasks with one
+cmd = "echo all test suites passed"
+default-environment = "test"
+depends-on = [
+    { task = "test-unit", args = ["{{ njobs }}"] },
+    { task = "test-array-api", args = ["{{ njobs }}"] },
+]
+
+[tool.pixi.feature.test.tasks.test-unit]
+args = [{ arg = "njobs", default = "auto" }]
+default-environment = "test"
+cmd = "pytest -n {{ njobs }} --ignore=tests/test_array_api.py"
+depends-on = ["compile"]
+
+# The Array API wrapper is a single test that runs array-api-tests in a nested
+# pytest, so the workers go to the nested run. It skips coverage and writes its
+# own junit file so it doesn't overwrite test-unit's reports.
+[tool.pixi.feature.test.tasks.test-array-api]
+args = [{ arg = "njobs", default = "auto" }]
+default-environment = "test"
+cmd = "pytest tests/test_array_api.py --no-cov --junitxml=junit/array-api-results.xml --array-api='-n {{ njobs }}'"
+depends-on = ["compile"]
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"

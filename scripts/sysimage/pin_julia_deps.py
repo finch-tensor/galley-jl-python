@@ -5,6 +5,9 @@ registered package in the resolved ``Manifest.toml`` (transitive dependencies
 included) are pinned to exact versions. Everyone then resolves the same
 manifest, which the prebuilt sysimage requires.
 
+Packages pinned to a git commit (``url`` and ``rev`` in juliapkg.json) are
+left as they are; change their ``rev`` by hand.
+
 To update: loosen the pins you want to move, resolve (e.g. ``pixi run
 compile``), run this script, then rebuild with ``pixi run build-sysimage``.
 """
@@ -35,8 +38,14 @@ def main() -> None:
     config = json.loads(JULIAPKG_JSON.read_text())
     config["julia"] = f"={manifest['julia_version']}"
 
+    git_pinned = {
+        name: spec for name, spec in config["packages"].items() if "rev" in spec
+    }
     packages = {}
     for name, (entry, *_) in sorted(manifest["deps"].items()):
+        if name in git_pinned:
+            packages[name] = git_pinned[name]
+            continue
         # stdlibs have no tree hash and ship with Julia itself
         if "git-tree-sha1" not in entry or name in UNPINNED:
             continue
@@ -47,7 +56,10 @@ def main() -> None:
     config["packages"] = packages
 
     JULIAPKG_JSON.write_text(json.dumps(config, indent=2) + "\n")
-    print(f"pinned julia {config['julia']} and {len(packages)} packages")
+    print(
+        f"pinned julia {config['julia']} and {len(packages)} packages "
+        f"({len(git_pinned)} to git commits: {', '.join(git_pinned) or 'none'})"
+    )
 
 
 if __name__ == "__main__":

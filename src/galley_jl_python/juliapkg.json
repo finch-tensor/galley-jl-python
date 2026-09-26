@@ -83,7 +83,8 @@
     },
     "Finch": {
       "uuid": "9177782c-1635-4eb9-9bfb-d9dfa25e6bce",
-      "version": "=1.6.0"
+      "url": "https://github.com/finch-tensor/Finch.jl",
+      "rev": "368602490c2a106778afc9ca9d567a2201393012"
     },
     "GPUArraysCore": {
       "uuid": "46192b85-c4d5-4398-a991-12ede77f4527",

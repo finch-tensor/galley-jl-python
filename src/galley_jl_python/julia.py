@@ -1,5 +1,4 @@
 import juliapkg  # noqa: I001, F401
-from pathlib import Path
 
 from . import _sysimage
 
@@ -10,12 +9,12 @@ _sysimage.configure()
 # You can also run `develop.py` to quickly use a local copy of Finch.jl.
 # An example development json is found in `juliapkg_dev.json`
 # Julia and all packages are pinned so the prebuilt sysimage matches; update the
-# pins with `scripts/sysimage/pin_julia_deps.py`.
+# pins with `scripts/sysimage/pin_julia_deps.py`. Finch is pinned to a git
+# commit (`rev`), which that script leaves alone.
 import juliacall as jc  # noqa: E402, F401
 from juliacall import Main as jl  # noqa: E402, F401
 
 jl.seval("using Finch")
-jl.Base.include(jl.Finch.Galley, str(Path(__file__).with_name("finch_patches.jl")))
 jl.seval("using HDF5")
 jl.seval("using NPZ")
 jl.seval("using TensorMarket")

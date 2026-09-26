@@ -23,9 +23,8 @@ jobs:
           pixi-version: v0.72.2
           environments: ${{ matrix.environment }}
       - name: Run tests
-        run: |
-          pixi run -e ${{ matrix.environment }} test \
-            --junit-xml=test-${{ matrix.os }}-${{ matrix.environment }}.xml
+        # junit and coverage reports go where pytest.ini says (junit/, coverage.xml)
+        run: pixi run -e ${{ matrix.environment }} test
       - uses: codecov/codecov-action@v7
 
 on:
