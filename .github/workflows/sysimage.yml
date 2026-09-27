@@ -1,0 +1,53 @@
+name: Sysimage
+
+# Builds the Julia sysimage for each platform and publishes it to the GitHub
+# release tagged `sysimage-<key>`, where <key> identifies the exact Julia
+# environment. Users download it with `pixi run fetch-sysimage`.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - src/galley_jl_python/juliapkg.json
+      - scripts/sysimage/**
+      - pyproject.toml
+      - pixi.lock
+      - .github/workflows/sysimage.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    # GitHub-hosted maximum; the generic multi-CPU build is slow
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.72.2
+      - name: Build sysimage
+        id: build
+        run: pixi run build-sysimage
+      - name: Publish to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.build.outputs.tag }}
+          IMAGE: ${{ steps.build.outputs.path }}
+        run: |
+          # the matrix jobs race to create the release; losing the race is fine
+          gh release view "$TAG" > /dev/null 2>&1 \
+            || gh release create "$TAG" --prerelease --title "$TAG" \
+                 --notes "Prebuilt Julia sysimages. Fetch with \`pixi run fetch-sysimage\`." \
+            || gh release view "$TAG" > /dev/null
+          gh release upload "$TAG" "$IMAGE" --clobber

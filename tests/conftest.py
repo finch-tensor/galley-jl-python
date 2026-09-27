@@ -2,6 +2,12 @@ import pytest
 
 import numpy as np
 
+# Start Julia here, on the main thread, in every pytest process. Otherwise the
+# pytest-xdist controller first imports galley when it rebuilds a
+# PerformanceWarning sent by a worker, which starts Julia on execnet's receiver
+# thread, and Julia's exit hook then deadlocks at interpreter shutdown.
+import galley_jl_python  # noqa: E402, F401
+
 
 def pytest_addoption(parser):
     parser.addoption(

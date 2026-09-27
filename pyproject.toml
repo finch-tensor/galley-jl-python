@@ -11,6 +11,7 @@ dependencies = [
     "numba>=0.61,<0.63.1",
     "juliacall (>=0.9.24,<0.10.0)",
     "lark (>=1.3.0,<2.0.0)",
+    "finch-tensor>=0.7.0,<0.8.0",
 ]
 
 [tool.poetry]
@@ -20,18 +21,96 @@ requires-poetry = ">=2.0,<3.0"
 [project.optional-dependencies]
 test = [
     "pytest>=7.4.4,<7.6",
-    "pre-commit>=3.6.0,<3.9",
     "pytest-cov>=4.1.0,<4.2",
     "sparse>=0.17.0,<0.17.1",
     "scipy>=1.7,<1.17",
     "hypothesis (>=6.151.9,<7.0.0)",
     "ndindex (>=1.10.1,<2.0.0)",
     "pytest-json-report (>=1.5.0,<2.0.0)",
+    "pytest-xdist>=3.6.1,<4",
 ]
 
 [build-system]
 requires = ["poetry-core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = [
+    { name = "linux-amd64", platform = "linux-64", glibc = "2.34" },
+    { name = "linux-arm64", platform = "linux-aarch64", glibc = "2.34" },
+    { name = "macos-arm64", platform = "osx-arm64", macos = "15.0" },
+    { name = "win-amd64", platform = "win-64" },
+]
+
+[tool.pixi.dependencies]
+python = ">=3.11,<3.14"
+
+[tool.pixi.pypi-dependencies]
+galley-jl-python = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+# pixi has no post-install hook, so the entry-point tasks fetch the sysimage
+compile = { cmd = "python -c 'import galley_jl_python'", depends-on = ["fetch-sysimage"] }
+build-sysimage = "python scripts/sysimage/build.py"
+fetch-sysimage = "python scripts/sysimage/fetch.py"
+
+# `pixi run test [njobs]` runs both suites, one after the other, each spread
+# over `njobs` pytest-xdist workers (default: one per CPU).
+[tool.pixi.feature.test.tasks.test]
+args = [{ arg = "njobs", default = "auto" }]
+# a no-op cmd, since `default-environment` is only allowed on tasks with one
+cmd = "echo all test suites passed"
+default-environment = "test"
+depends-on = [
+    { task = "test-unit", args = ["{{ njobs }}"] },
+    { task = "test-array-api", args = ["{{ njobs }}"] },
+]
+
+[tool.pixi.feature.test.tasks.test-unit]
+args = [{ arg = "njobs", default = "auto" }]
+default-environment = "test"
+cmd = "pytest -n {{ njobs }} --ignore=tests/test_array_api.py"
+depends-on = ["compile"]
+
+# The Array API wrapper is a single test that runs array-api-tests in a nested
+# pytest, so the workers go to the nested run. It skips coverage and writes its
+# own junit file so it doesn't overwrite test-unit's reports.
+[tool.pixi.feature.test.tasks.test-array-api]
+args = [{ arg = "njobs", default = "auto" }]
+default-environment = "test"
+cmd = "pytest tests/test_array_api.py --no-cov --junitxml=junit/array-api-results.xml --array-api='-n {{ njobs }}'"
+depends-on = ["compile"]
+
+# Hooks run in their own environment, without galley's dependencies or Julia.
+[tool.pixi.feature.pre-commit.dependencies]
+pre-commit = "*"
+
+[tool.pixi.feature.pre-commit.tasks]
+pre-commit-install = "pre-commit install"
+
+# `pixi run pre-commit [skip]` runs every hook on every file; `skip` is a
+# comma-separated list of hook ids to leave out.
+[tool.pixi.feature.pre-commit.tasks.pre-commit]
+args = [{ arg = "skip", default = "" }]
+env = { SKIP = "{{ skip }}" }
+cmd = "pre-commit run -a"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.environments]
+test = { features = ["test"], solve-group = "default" }
+test-py311 = ["test", "py311"]
+test-py312 = ["test", "py312"]
+test-py313 = ["test", "py313"]
+pre-commit = { features = ["pre-commit"], no-default-feature = true }
 
 [tool.ruff]
 line-length = 88
@@ -61,4 +140,3 @@ section-order = [
 
 [tool.mypy]
 ignore_missing_imports = true
-exclude = ["tests/reference"]
