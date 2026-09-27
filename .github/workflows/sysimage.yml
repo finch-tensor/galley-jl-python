@@ -5,6 +5,11 @@ name: Sysimage
 # environment. Users download it with `pixi run fetch-sysimage`.
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the images to the release (off to only test the build)
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -36,10 +41,49 @@ jobs:
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
           pixi-version: v0.72.2
+      # Resolving the Julia environment is needed to name the image anyway, and
+      # takes minutes where a build takes hours, so check the release first.
+      - name: Check for a published image
+        id: info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pixi run python scripts/sysimage/info.py
+          . <(grep -E '^(tag|name)=' "$GITHUB_OUTPUT" | tail -2)
+          if gh release view "$tag" --json assets --jq '.assets[].name' 2>/dev/null \
+              | grep -qxF "$name"; then
+            echo "$name is already published in $tag; skipping the build."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+      # PackageCompiler's final compile needs more memory than the hosted runners
+      # have (the ubuntu-latest VM died without it), so give Linux swap on /mnt.
+      - name: Add swap
+        if: runner.os == 'Linux' && steps.info.outputs.exists != 'true'
+        run: |
+          sudo fallocate -l 24G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
       - name: Build sysimage
         id: build
-        run: pixi run build-sysimage
+        if: steps.info.outputs.exists != 'true'
+        run: |
+          # Log memory and disk every minute. Step logs stream live, so this
+          # survives even if the runner VM dies mid-build.
+          (
+            while sleep 60; do
+              case "$RUNNER_OS" in
+                Linux) free -m | awk '/Mem|Swap/ {printf "[resources] %s used=%sMB free=%sMB  ", $1, $3, $4}' ;;
+                macOS) memory_pressure | grep -i "free percentage" | sed 's/^/[resources] /' | tr '\n' ' ' ;;
+              esac
+              df -h . | awk 'NR==2 {print "disk avail=" $4}'
+            done
+          ) &
+          pixi run build-sysimage
       - name: Publish to release
+        # pushes to main always publish; manual runs only when asked to
+        if: steps.info.outputs.exists != 'true' && (github.event_name == 'push' || inputs.publish)
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.build.outputs.tag }}
