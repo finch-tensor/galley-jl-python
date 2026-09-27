@@ -13,7 +13,10 @@ if Base.find_package("PackageCompiler") === nothing
 end
 using PackageCompiler
 
-packages = ["Finch", "HDF5", "NPZ", "TensorMarket", "PythonCall"]
+# PythonCall stays out: it stores its own install path in a `const ROOT_DIR`,
+# which juliacall reads at startup, so an image containing it only works on the
+# machine that built it. Loaded from the user's depot, it finds its own files.
+packages = ["Finch", "HDF5", "NPZ", "TensorMarket"]
 
 create_sysimage(
     packages;

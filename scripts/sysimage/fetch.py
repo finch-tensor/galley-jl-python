@@ -1,14 +1,11 @@
 """Download the prebuilt sysimage for this platform and Julia environment.
 
+Importing galley does this automatically; this script does it ahead of time.
 CI publishes one image per platform to the GitHub release tagged
 ``sysimage-<key>``, where the key identifies the exact Julia environment.
 """
 
-import os
 import sys
-import tempfile
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -19,39 +16,15 @@ from _load import sysimage  # noqa: E402
 
 def main() -> None:
     key = sysimage.current_key()
-    image = sysimage.image_path(key)
-    if image.is_file():
-        print(f"[sysimage] already present: {image}")
-        return
-
-    url = f"{sysimage.RELEASES_URL}/{sysimage.release_tag(key)}/{image.name}"
-    print(f"[sysimage] downloading {url}", flush=True)
-    image.parent.mkdir(parents=True, exist_ok=True)
-    fd, partial = tempfile.mkstemp(dir=image.parent, suffix=".part")
-    try:
-        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(url) as resp:
-            while chunk := resp.read(1 << 20):
-                out.write(chunk)
-        os.replace(partial, image)
-    # never fail: other tasks depend on this one, and galley works without an
-    # image, just with a slower first call
-    except urllib.error.HTTPError as e:
-        if e.code != 404:
-            print(f"[sysimage] download failed ({e}); continuing without it.")
-            return
+    image = sysimage.fetch(key)
+    if image is not None:
+        print(f"[sysimage] {image}")
+    else:
         print(
-            f"[sysimage] no prebuilt image for this platform and Julia environment "
-            f"({image.name}); continuing without it. Build one locally with "
-            "`pixi run build-sysimage`."
+            f"[sysimage] no prebuilt image available for {sysimage.image_name(key)}"
+            " (or another process is downloading it); galley works without it. "
+            "Build one locally with `pixi run build-sysimage`."
         )
-        return
-    except (urllib.error.URLError, OSError) as e:
-        print(f"[sysimage] download failed ({e}); continuing without it.")
-        return
-    finally:
-        if os.path.exists(partial):
-            os.remove(partial)
-    print(f"[sysimage] saved {image}")
 
 
 if __name__ == "__main__":
