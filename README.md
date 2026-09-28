@@ -58,8 +58,8 @@ Options:
 ### Julia sysimage
 
 Most of Galley's startup time is Julia compiling Finch itself. A prebuilt Julia
-sysimage removes most of it: the first matmul of a session drops from about 4.5
-minutes to under a minute.
+sysimage removes it: the first matmul of a session drops from about 4.5 minutes
+to a few seconds.
 
 - `import galley_jl_python` uses the image for the current platform and Julia
   environment. If it isn't cached in `~/.cache/galley-jl-python/`

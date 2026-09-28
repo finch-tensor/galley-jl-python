@@ -30,7 +30,7 @@ from pathlib import Path
 RELEASES_URL = "https://github.com/finch-tensor/galley-jl-python/releases/download"
 # Bump when images built from the same environment become incompatible, so the
 # new images get new names instead of reusing the published ones.
-# 2: PythonCall no longer in the image (v1 images only worked on the build host)
+# 2: PythonCall finds juliacall from Python (v1 only worked on the build host)
 IMAGE_FORMAT = 2
 _EXTENSIONS = {"linux": "so", "darwin": "dylib", "win32": "dll"}
 # after a 404, don't ask again for this long (images are published after CI)
