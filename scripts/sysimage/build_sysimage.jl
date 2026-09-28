@@ -13,6 +13,9 @@ if Base.find_package("PackageCompiler") === nothing
 end
 using PackageCompiler
 
+# PythonCall must be in the image: loading it on top of the image invalidates
+# much of the image's code (~40 s of recompiling). relocate_pythoncall.jl stops
+# it from remembering the build machine's install path.
 packages = ["Finch", "HDF5", "NPZ", "TensorMarket", "PythonCall"]
 
 create_sysimage(
@@ -20,6 +23,7 @@ create_sysimage(
     project=project,
     sysimage_path=output,
     precompile_statements_file=statements_file,
+    script=joinpath(@__DIR__, "relocate_pythoncall.jl"),
     # a generic target so the image runs on any x86_64 CPU, not just this one
     cpu_target=PackageCompiler.default_app_cpu_target(),
     include_transitive_dependencies=true,

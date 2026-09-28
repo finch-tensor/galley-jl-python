@@ -14,6 +14,13 @@ The source code for `galley-jl-python` is available on GitHub at [https://github
 pip install galley-jl-python
 ```
 
+Galley needs a Python linked against **OpenSSL 3.5 or newer**. It runs Julia
+1.12, which bundles OpenSSL 3.5 in the same process as Python. Pythons from
+conda-forge, including through pixi or conda, meet this. Many system and
+pyenv-built Pythons still use OpenSSL 3.0, and there `import galley_jl_python`
+fails with an error that says so. Check with
+`python -c "import ssl; print(ssl.OPENSSL_VERSION)"`.
+
 ## Contributing
 
 ### Development environment
@@ -58,16 +65,19 @@ Options:
 ### Julia sysimage
 
 Most of Galley's startup time is Julia compiling Finch itself. A prebuilt Julia
-sysimage removes it: the first operations of a session drop from minutes to a
-few seconds.
+sysimage removes it: the first matmul of a session drops from about 4.5 minutes
+to a few seconds.
 
-- `pixi run fetch-sysimage` downloads the image for your platform into
-  `~/.cache/galley-jl-python/` (`GALLEY_JL_PYTHON_CACHE` overrides this).
-  `pixi run compile` and `pixi run test` run this step first.
-- `pixi run build-sysimage` builds the image locally instead. This takes hours.
-- `import galley_jl_python` loads a cached image automatically when it matches
-  the current Julia environment. Otherwise Julia starts without it. Set
-  `GALLEY_JL_PYTHON_SYSIMAGE=0` to turn this off.
+- `import galley_jl_python` uses the image for the current platform and Julia
+  environment. If it isn't cached in `~/.cache/galley-jl-python/`
+  (`GALLEY_JL_PYTHON_CACHE` overrides this), the import downloads it from the
+  project's GitHub releases first, about 900 MB once per environment. It then
+  checks that the image loads, and if there's no image or anything fails, Julia
+  starts without it. Set `GALLEY_JL_PYTHON_SYSIMAGE=0` to turn all of this off.
+- `pixi run fetch-sysimage` downloads the image ahead of time. `pixi run compile`
+  and `pixi run test` run this step first.
+- `pixi run build-sysimage` builds the image locally instead, in about half an
+  hour.
 
 An image works only with the exact Julia and package versions it was built
 from. For this reason `src/galley_jl_python/juliapkg.json` pins Julia and every
@@ -82,7 +92,7 @@ To update the Julia dependencies:
 
 Pushing the new pins to `main` runs the "Sysimage" GitHub Action. It builds
 images for Linux, macOS and Windows and publishes them to a `sysimage-<hash>`
-GitHub release, where `fetch-sysimage` finds them. The action can also be run
+GitHub release, where imports and `fetch-sysimage` find them. The action can also be run
 manually from the Actions tab.
 
 ### Publishing
