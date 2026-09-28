@@ -14,6 +14,13 @@ The source code for `galley-jl-python` is available on GitHub at [https://github
 pip install galley-jl-python
 ```
 
+Galley needs a Python linked against **OpenSSL 3.5 or newer**. It runs Julia
+1.12, which bundles OpenSSL 3.5 in the same process as Python. Pythons from
+conda-forge, including through pixi or conda, meet this. Many system and
+pyenv-built Pythons still use OpenSSL 3.0, and there `import galley_jl_python`
+fails with an error that says so. Check with
+`python -c "import ssl; print(ssl.OPENSSL_VERSION)"`.
+
 ## Contributing
 
 ### Development environment
