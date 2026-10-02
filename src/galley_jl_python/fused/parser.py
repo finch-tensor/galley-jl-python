@@ -47,9 +47,24 @@ _UNARY_OPS = {
     ast.Not: operator.not_,
 }
 
+
+def _logical_and(a, b):
+    return a and b
+
+
+def _logical_or(a, b):
+    return a or b
+
+
+def _if_expr(cond, then_val, else_val):
+    return then_val if cond else else_val
+
+
+# Distinct from `operator.and_`/`operator.or_` so that `&`/`|` are not lowered to
+# `and`/`or`.
 _BOOL_OPS = {
-    ast.And: operator.and_,
-    ast.Or: operator.or_,
+    ast.And: _logical_and,
+    ast.Or: _logical_or,
 }
 
 _REV_BIN_OPS = {fn: op for op, fn in _BIN_OPS.items()}
@@ -116,6 +131,8 @@ class _FusedFunctionParser:
                     self._parse_expr(iterable),
                     self._parse_block(body),
                 )
+            case ast.Break():
+                return fzd.Break()
             case ast.Return(value=None):
                 return fzd.Return(())
             case ast.Return(value=value):
@@ -177,7 +194,7 @@ class _FusedFunctionParser:
                 )
             case ast.IfExp(test=test, body=body, orelse=orelse):
                 return fzd.Call(
-                    fzd.Literal(lambda cond, t, f: t if cond else f),
+                    fzd.Literal(_if_expr),
                     (
                         self._parse_expr(test),
                         self._parse_expr(body),
@@ -187,8 +204,6 @@ class _FusedFunctionParser:
             case ast.Attribute(value=value, attr=attr):
                 base = self._parse_expr(value)
                 return fzd.Call(fzd.Literal(getattr), (base, fzd.Literal(attr)))
-            case ast.Break():
-                return fzd.Break()  # ty: ignore[invalid-return-type]
             case _:
                 raise self._unsupported(
                     expr,
@@ -229,7 +244,7 @@ class _FusedFunctionParser:
                 self._parse_op(cmp.ops[i]),
                 self._parse_expr(cmp.comparators[i]),
             )
-            expr = fzd.BinaryOp(expr, fzd.Literal(operator.and_), next_cmp)
+            expr = fzd.BinaryOp(expr, fzd.Literal(_logical_and), next_cmp)
         return expr
 
     def _parse_bool_op(
@@ -361,6 +376,8 @@ class _FusedToPythonAST:
                         ctx=ast.Load(),
                     )
                 )
+            case fzd.Break():
+                return ast.Break()
             case _:
                 raise ValueError(
                     f"Unsupported fused statement type: {type(stmt).__name__}"
@@ -433,6 +450,17 @@ class _FusedToPythonAST:
                     f"Unsupported fused expression type: {type(expr).__name__}"
                 )
 
+    def _global_name(self, name: str, value: Any) -> ast.expr:
+        # Freshen the name so that distinct objects sharing a name (e.g. `np.add`
+        # and `operator.add`) do not clobber each other.
+        fresh_name = name
+        counter = 1
+        while self._extra_globals.get(fresh_name, value) is not value:
+            fresh_name = f"{name}_{counter}"
+            counter += 1
+        self._extra_globals[fresh_name] = value
+        return ast.Name(id=fresh_name, ctx=ast.Load())
+
     def _literal_to_expr(self, value: Any) -> ast.expr:
         if value is None or isinstance(
             value, str | bytes | int | float | complex | bool
@@ -445,13 +473,10 @@ class _FusedToPythonAST:
 
             name = getattr(value, "__name__", None)
             if name is not None and name.isidentifier():
-                self._extra_globals[name] = value
-                return ast.Name(id=name, ctx=ast.Load())
+                return self._global_name(name, value)
 
         if isinstance(value, types.ModuleType):
-            name = value.__name__
-            self._extra_globals[name] = value
-            return ast.Name(id=name, ctx=ast.Load())
+            return self._global_name(value.__name__, value)
 
         raise ValueError(f"Literal cannot be represented in Python AST: {value!r}")
 

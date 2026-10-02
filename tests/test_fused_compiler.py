@@ -334,3 +334,73 @@ def test_liveness_if_branch_merges():
     assert "a" in names
     assert "b" in names
     assert "result" in names
+
+
+def _increment(x):
+    return x + 1
+
+
+def _decrement(x):
+    return x - 1
+
+
+_decrement.__name__ = "_increment"
+
+
+def test_jit_keeps_bitwise_and_logical_operators_apart():
+    @gl.jit
+    def opt_fn(a, b):
+        return a | b, a & b, a or b, a and b
+
+    assert opt_fn(1, 2) == (3, 0, 1, 2)
+
+
+def test_jit_loop_variable_is_defined_by_the_loop():
+    @gl.jit
+    def opt_fn(n):
+        total = 0
+        for i in range(n):
+            total = total + i
+        return total
+
+    assert opt_fn(4) == 6
+
+
+def test_jit_break():
+    @gl.jit
+    def opt_fn(limit):
+        i = 0
+        while i < 10:
+            i = i + 1
+            if i > limit:
+                break
+        return i
+
+    assert opt_fn(3) == 4
+
+
+def test_jit_expression_statement(capsys):
+    @gl.jit
+    def opt_fn(x):
+        print(x)
+        return x
+
+    assert opt_fn(5) == 5
+    assert capsys.readouterr().out == "5\n"
+
+
+def test_jit_conditional_expression():
+    @gl.jit
+    def opt_fn(c):
+        return 1 if c else 2
+
+    assert opt_fn(True) == 1
+    assert opt_fn(False) == 2
+
+
+def test_jit_distinct_callables_with_the_same_name():
+    @gl.jit
+    def opt_fn(x):
+        return _increment(x), _decrement(x)
+
+    assert opt_fn(5) == (6, 4)
