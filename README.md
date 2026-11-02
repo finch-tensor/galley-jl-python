@@ -1,7 +1,6 @@
 # galley-jl-python
-
-This is the beginnings of a sparse tensor library for Python, backed by the
-[Finch.jl](https://github.com/finch-tensor/Finch.jl) tensor compiler.
+A sparse tensor library for Python, backed by the
+[Finch.jl](https://github.com/finch-tensor/Galley.jl) tensor compiler.
 
 ## Source
 
