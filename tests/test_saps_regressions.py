@@ -85,3 +85,21 @@ def test_maximum_minimum():
     assert_equal(_dense(galley.minimum(0.0, gx)), np.minimum(0.0, x))
     a = galley.asarray(np.array([[3.0, 1.0], [2.0, 5.0]]))
     assert_equal(_dense(galley.einop("y[i] max= a[i, j]", a=a)), [3.0, 5.0])
+
+
+def test_scalar_operands_promote_weakly():
+    # pagerank: a float times a Boolean array was converted to Bool.
+    b = galley.asarray(np.array([True, False]))
+    assert_equal(_dense(b * 0.5), [0.5, 0.0])
+    i = galley.asarray(np.array([1, 2]))
+    assert_equal(_dense(i + 1.5), [2.5, 3.5])
+    assert _dense(i + 1).dtype == np.int64
+    f = galley.asarray(np.array([1.0, 2.0], dtype=np.float32))
+    assert _dense(f * 2.0).dtype == np.float32
+    assert_equal(_dense(b & np.True_), [True, False])
+
+
+def test_scalar_operands_of_lazy_tensors():
+    # msbfs, model_counting: einop's operands are lazy, and have no dtype.
+    x = galley.asarray(np.array([1.0, 2.0]))
+    assert_equal(_dense(galley.compute(galley.lazy(x) * 2)), [2.0, 4.0])

@@ -37,6 +37,37 @@ class SparseArray:
     """
 
 
+_WEAK_SCALAR_TYPE = """
+galley_weak_scalar_type(::Type{Bool}, ::Type{Bool}) = Bool
+galley_weak_scalar_type(::Type{T}, ::Type{Bool}) where {T} = T
+galley_weak_scalar_type(::Type{Bool}, ::Type{S}) where {S<:Integer} = S
+galley_weak_scalar_type(::Type{T}, ::Type{<:Integer}) where {T<:Number} = T
+galley_weak_scalar_type(
+    ::Type{T}, ::Type{<:AbstractFloat}
+) where {T<:Union{AbstractFloat,Complex}} = T
+galley_weak_scalar_type(::Type{T}, ::Type{<:Complex}) where {T<:Complex} = T
+galley_weak_scalar_type(
+    ::Type{T}, ::Type{<:Complex}
+) where {T<:AbstractFloat} = Complex{T}
+galley_weak_scalar_type(::Type, ::Type{S}) where {S} = S
+"""
+
+
+def _weak_scalar(element_type, value):
+    """A Python scalar operand as the Array API's weak scalars are: of the
+    array's type when it is of the same kind (an int with an integer array, a
+    float with a floating one), and otherwise of the default type (a float
+    with a Boolean array is a Float64). Reads lazy tensors' types too."""
+    if not hasattr(jl, "galley_weak_scalar_type"):
+        jl.seval(_WEAK_SCALAR_TYPE)
+    if isinstance(value, np.generic):
+        value = value.item()  # Julia reads np.bool_ as a Python object.
+    value_type = jl.typeof(jc.convert(jl.Any, value))
+    # jc.convert keeps the result in Julia; a Julia number returned to Python
+    # becomes a Python number, and so a Float64, again.
+    return jc.convert(jl.galley_weak_scalar_type(element_type, value_type), value)
+
+
 def _element_fill(dtype, fill_value):
     """fill_value as an Element level's fill for values of dtype.
 
@@ -284,7 +315,7 @@ class Tensor(_Display, SparseArray):
             result = jl.broadcast(jl.seval(op), self._obj)
         else:
             if np.isscalar(other):
-                other = jc.convert(self.dtype, other)
+                other = _weak_scalar(jl.eltype(self._obj), other)
             else:
                 other = jl.permutedims(other._obj, tuple(range(other.ndim, 0, -1)))
             # inverse swizzle, so `broadcast` appends new dims to the front
