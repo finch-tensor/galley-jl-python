@@ -25,9 +25,9 @@ from .levels import (
 )
 from .typing import Device, DType, JuliaObj, OrderType, TupleOf3Arrays, spmatrix
 
-# Builds a 0-d Finch tensor in Julia so the element keeps its Julia eltype.
+# Builds a 0-d Galley tensor in Julia so the element keeps its Julia eltype.
 _scalar_to_0d = jl.seval(
-    "(T, fv, x) -> Finch.Tensor(Finch.Element{convert(T, fv)}(T[convert(T, x)]))"
+    "(T, fv, x) -> Galley.Tensor(Galley.Element{convert(T, fv)}(T[convert(T, x)]))"
 )
 
 
@@ -83,7 +83,7 @@ def _element_fill(dtype, fill_value):
 
 class Tensor(_Display, SparseArray):
     """
-    A wrapper class for Finch.Tensor and Finch.SwizzleArray.
+    A wrapper class for Galley.Tensor and Galley.SwizzleArray.
 
     Constructors
     ------------
@@ -102,7 +102,7 @@ class Tensor(_Display, SparseArray):
 
     Parameters
     ----------
-    obj : np.ndarray or scipy.sparse or Storage or Finch.SwizzleArray
+    obj : np.ndarray or scipy.sparse or Storage or Galley.SwizzleArray
         Input to construct a Tensor. It's a no-copy operation of for NumPy and
         SciPy input. For Storage it's levels' description with order. The order
         numbers the dimensions from the fastest to slowest.  The leaf nodes have
@@ -119,7 +119,7 @@ class Tensor(_Display, SparseArray):
     Returns
     -------
     Tensor
-        Python wrapper for Finch Tensor.
+        Python wrapper for a Galley Tensor.
 
     Examples
     --------
@@ -174,11 +174,11 @@ class Tensor(_Display, SparseArray):
                 obj.order, self.get_lvl_ndim(obj.levels_descr._obj)
             )
             self._obj = jl.swizzle(jl.Tensor(obj.levels_descr._obj), *order)
-        elif jl.isa(obj, jl.Finch.Tensor):  # raw-Julia-object constructors
+        elif jl.isa(obj, jl.Galley.Tensor):  # raw-Julia-object constructors
             if copy:
                 self._raise_julia_copy_not_supported()
             self._obj = jl.swizzle(obj, *tuple(range(1, jl.ndims(obj) + 1)))
-        elif jl.isa(obj, jl.Finch.SwizzleArray) or jl.isa(obj, jl.Finch.LazyTensor):
+        elif jl.isa(obj, jl.Galley.SwizzleArray) or jl.isa(obj, jl.Galley.LazyTensor):
             if copy:
                 self._raise_julia_copy_not_supported()
             self._obj = obj
@@ -209,10 +209,10 @@ class Tensor(_Display, SparseArray):
         return self._elemwise_op("/", other)
 
     def __floordiv__(self, other):
-        return self._elemwise_op("Finch.fld_nothrow", other)
+        return self._elemwise_op("Galley.fld_nothrow", other)
 
     def __mod__(self, other):
-        return self._elemwise_op("Finch.mod_nothrow", other)
+        return self._elemwise_op("Galley.mod_nothrow", other)
 
     def __pow__(self, other):
         return self._elemwise_op("^", other)
@@ -231,10 +231,10 @@ class Tensor(_Display, SparseArray):
         return self._elemwise_op("/", other, reflected=True)
 
     def __rfloordiv__(self, other):
-        return self._elemwise_op("Finch.fld_nothrow", other, reflected=True)
+        return self._elemwise_op("Galley.fld_nothrow", other, reflected=True)
 
     def __rmod__(self, other):
-        return self._elemwise_op("Finch.mod_nothrow", other, reflected=True)
+        return self._elemwise_op("Galley.mod_nothrow", other, reflected=True)
 
     def __rpow__(self, other):
         return self._elemwise_op("^", other, reflected=True)
@@ -361,9 +361,11 @@ class Tensor(_Display, SparseArray):
             key = _add_plus_one(key, self.shape)
 
         result = self._obj[key]
-        if jl.isa(result, jl.Finch.SwizzleArray) or jl.isa(result, jl.Finch.LazyTensor):
+        if jl.isa(result, jl.Galley.SwizzleArray) or jl.isa(
+            result, jl.Galley.LazyTensor
+        ):
             return Tensor(result)
-        if jl.isa(result, jl.Finch.Tensor):
+        if jl.isa(result, jl.Galley.Tensor):
             return Tensor(jl.swizzle(result, *range(1, jl.ndims(result) + 1)))
         # the Array API requires a 0-d array, not a scalar, for integer-only keys
         return Tensor(jl.swizzle(_scalar_to_0d(self.dtype, self.fill_value, result)))
@@ -392,7 +394,7 @@ class Tensor(_Display, SparseArray):
     def _is_dense(self) -> bool:
         lvl = self._obj.body.lvl
         for _ in self.shape:
-            if not jl.isa(lvl, jl.Finch.Dense):
+            if not jl.isa(lvl, jl.Galley.Dense):
                 return False
             lvl = lvl.lvl
         return True
@@ -427,7 +429,7 @@ class Tensor(_Display, SparseArray):
         return self
 
     def is_computed(self) -> bool:
-        return not jl.isa(self._obj, jl.Finch.LazyTensor)
+        return not jl.isa(self._obj, jl.Galley.LazyTensor)
 
     @classmethod
     def preprocess_order(cls, order: OrderType, ndim: int) -> tuple[int, ...]:
@@ -457,7 +459,7 @@ class Tensor(_Display, SparseArray):
         while True:
             ndim += 1
             lvl = lvl.lvl
-            if jl.isa(lvl, jl.Finch.Element):
+            if jl.isa(lvl, jl.Galley.Element):
                 break
         return ndim
 
@@ -1044,7 +1046,7 @@ def _reduce_sum_prod(
 
     result = Tensor(result)
 
-    if jl.isa(result._obj, jl.Finch.LazyTensor):
+    if jl.isa(result._obj, jl.Galley.LazyTensor):
         if dtype is not None:
             raise ValueError(
                 "`dtype` keyword for `sum` and `prod` in the lazy mode isn't supported"
@@ -1181,7 +1183,7 @@ def argmin(
     axis: int | None = None,
     keepdims: bool = False,
 ) -> Tensor:
-    return _reduce(x, jl.Finch.argmin_python, axis, keepdims)
+    return _reduce(x, jl.Galley.argmin_python, axis, keepdims)
 
 
 def argmax(
@@ -1191,7 +1193,7 @@ def argmax(
     axis: int | None = None,
     keepdims: bool = False,
 ) -> Tensor:
-    return _reduce(x, jl.Finch.argmax_python, axis, keepdims)
+    return _reduce(x, jl.Galley.argmax_python, axis, keepdims)
 
 
 def squeeze(
@@ -1241,7 +1243,7 @@ def eye(
     _validate_device(device)
     n_cols = n_rows if n_cols is None else n_cols
     dtype = jl_dtypes.float64 if dtype is None else dtype
-    tns = jl.Finch.eye_python(n_rows, n_cols, k, dtype(False))
+    tns = jl.Galley.eye_python(n_rows, n_cols, k, dtype(False))
     if format == "coo":
         return Tensor(tns)
     if format == "dense":
@@ -1396,7 +1398,7 @@ def logaddexp(x1: Tensor, x2: Tensor, /) -> Tensor:
 
 
 def _truth(x: Tensor) -> Tensor:
-    """x as Bools, the truth the logical operators read (Finch.and and its
+    """x as Bools, the truth the logical operators read (Galley.and and its
     relatives take only Bools)."""
     # eltype, unlike `dtype`, also reads lazy tensors (einop's operands).
     if isinstance(x, Tensor) and jl.eltype(x._obj) == jl.Bool:
@@ -1411,15 +1413,15 @@ def _logical(op: str, x1: Tensor, x2: Tensor) -> Tensor:
 
 
 def logical_and(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return _logical("Finch.and", x1, x2)
+    return _logical("Galley.and", x1, x2)
 
 
 def logical_or(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return _logical("Finch.or", x1, x2)
+    return _logical("Galley.or", x1, x2)
 
 
 def logical_xor(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return _logical("Finch.xor", x1, x2)
+    return _logical("Galley.xor", x1, x2)
 
 
 def maximum(x1: Tensor, x2: Tensor, /) -> Tensor:

@@ -16,7 +16,7 @@ using PackageCompiler
 # PythonCall must be in the image: loading it on top of the image invalidates
 # much of the image's code (~40 s of recompiling). relocate_pythoncall.jl stops
 # it from remembering the build machine's install path.
-packages = ["Finch", "HDF5", "NPZ", "TensorMarket", "PythonCall"]
+packages = ["Galley", "HDF5", "NPZ", "TensorMarket", "PythonCall"]
 
 create_sysimage(
     packages;

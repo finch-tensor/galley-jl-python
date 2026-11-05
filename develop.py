@@ -16,19 +16,19 @@ Usage:
 
 Options:
     --restore   Restore the original juliapkg.json file.
-    --path      Path to the local copy of Finch.jl [default: ../Finch.jl].
+    --path      Path to the local copy of Galley.jl [default: ../Galley.jl].
 """
 parser = argparse.ArgumentParser(
     description=(
-        "Development script for Finch. This script allows you to specify "
-        "the location of a local copy of Finch.jl."
+        "Development script for Galley. This script allows you to specify "
+        "the location of a local copy of Galley.jl."
     ),
     usage=usage,
 )
 parser.add_argument(
     "--path",
-    default=os.path.join(script_dir, "../Finch.jl"),
-    help="Path to the Finch.jl package.",
+    default=os.path.join(script_dir, "../Galley.jl"),
+    help="Path to the Galley.jl package.",
 )
 parser.add_argument(
     "--restore", action="store_true", help="Restore the original juliapkg.json file."
@@ -48,8 +48,8 @@ if args.restore:
         print(f"An error occurred: {e}")
     exit()
 
-# Set the Finch path
-finch_path = os.path.abspath(args.path)
+# Set the Galley path
+galley_path = os.path.abspath(args.path)
 
 # Define source and destination file paths and copy the file
 try:
@@ -58,13 +58,13 @@ try:
 except (OSError, PermissionError) as e:
     print(f"An error occurred: {e}")
 
-# Checkout Finch for development
+# Check out Galley for development
 
-juliapkg.rm("Finch", target="src/galley_jl_python/juliapkg.json")
+juliapkg.rm("Galley", target="src/galley_jl_python/juliapkg.json")
 juliapkg.add(
-    "Finch",
-    "9177782c-1635-4eb9-9bfb-d9dfa25e6bce",
+    "Galley",
+    "0b99cc74-af0a-4786-be99-594ac14242a4",
     dev=True,
-    path=finch_path,
+    path=galley_path,
     target="src/galley_jl_python/juliapkg.json",
 )

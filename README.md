@@ -48,8 +48,8 @@ Run any other command inside an environment with `pixi run`, for example
 The package is still built and published with Poetry (see
 [Publishing](#publishing)).
 
-### Working with a local copy of Finch.jl
-The `develop.py` script can be used to set up a local copy of Finch.jl for
+### Working with a local copy of Galley.jl
+The `develop.py` script can be used to set up a local copy of Galley.jl for
 development. Run it with `pixi run python develop.py`.
 
 ```
@@ -58,12 +58,12 @@ Usage:
 
 Options:
     --restore   Restore the original juliapkg.json file.
-    --path      Path to the local copy of Finch.jl [default: ../Finch.jl].
+    --path      Path to the local copy of Galley.jl [default: ../Galley.jl].
 ```
 
 ### Julia sysimage
 
-Most of Galley's startup time is Julia compiling Finch itself. A prebuilt Julia
+Most of Galley's startup time is Julia compiling Galley.jl itself. A prebuilt Julia
 sysimage removes it: the first matmul of a session drops from about 4.5 minutes
 to a few seconds.
 
@@ -81,7 +81,7 @@ to a few seconds.
 An image works only with the exact Julia and package versions it was built
 from. For this reason `src/galley_jl_python/juliapkg.json` pins Julia and every
 Julia package. Each image's name includes a hash of that environment. A local
-Finch.jl from `develop.py` therefore runs without the image.
+Galley.jl from `develop.py` therefore runs without the image.
 
 To update the Julia dependencies:
 
