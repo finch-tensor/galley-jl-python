@@ -37,6 +37,19 @@ class SparseArray:
     """
 
 
+def _element_fill(dtype, fill_value):
+    """fill_value as an Element level's fill for values of dtype.
+
+    Finch requires an isbits fill. Julia converts NumPy's numeric scalars to
+    Julia numbers, but not `np.bool_` or 0-d arrays (which `sparse.COO` uses for
+    its fill), so both are normalized first, and Booleans become Python bools.
+    """
+    fill_value = np.asarray(fill_value).item()
+    if np.dtype(dtype) == np.bool_:
+        return bool(fill_value)
+    return np.dtype(dtype).type(fill_value)
+
+
 class Tensor(_Display, SparseArray):
     """
     A wrapper class for Finch.Tensor and Finch.SwizzleArray.
@@ -108,10 +121,10 @@ class Tensor(_Display, SparseArray):
         fill_value: np.number | None = None,
         copy: bool | None = None,
     ):
-        if isinstance(obj, int | float | complex | bool | list):
+        if isinstance(obj, int | float | complex | bool | list | tuple):
             if copy is False:
                 raise ValueError(
-                    "copy=False isn't supported for scalar inputs and Python lists"
+                    "copy=False isn't supported for scalar inputs and Python sequences"
                 )
             obj = np.asarray(obj)
         if fill_value is None:
@@ -173,6 +186,43 @@ class Tensor(_Display, SparseArray):
     def __pow__(self, other):
         return self._elemwise_op("^", other)
 
+    # Reflected operators, for a scalar on the left (`1 - x`, `2 ** x`).
+    def __radd__(self, other):
+        return self._elemwise_op("+", other, reflected=True)
+
+    def __rsub__(self, other):
+        return self._elemwise_op("-", other, reflected=True)
+
+    def __rmul__(self, other):
+        return self._elemwise_op("*", other, reflected=True)
+
+    def __rtruediv__(self, other):
+        return self._elemwise_op("/", other, reflected=True)
+
+    def __rfloordiv__(self, other):
+        return self._elemwise_op("Finch.fld_nothrow", other, reflected=True)
+
+    def __rmod__(self, other):
+        return self._elemwise_op("Finch.mod_nothrow", other, reflected=True)
+
+    def __rpow__(self, other):
+        return self._elemwise_op("^", other, reflected=True)
+
+    def __rand__(self, other):
+        return self._elemwise_op("&", other, reflected=True)
+
+    def __ror__(self, other):
+        return self._elemwise_op("|", other, reflected=True)
+
+    def __rxor__(self, other):
+        return self._elemwise_op("xor", other, reflected=True)
+
+    def __rlshift__(self, other):
+        return self._elemwise_op("<<", other, reflected=True)
+
+    def __rrshift__(self, other):
+        return self._elemwise_op(">>", other, reflected=True)
+
     @compiled()
     def __matmul__(self, other: Tensor) -> Tensor:
         if self.ndim == 0 or other.ndim == 0:
@@ -227,7 +277,9 @@ class Tensor(_Display, SparseArray):
     def __ne__(self, other):
         return self._elemwise_op("!=", other)
 
-    def _elemwise_op(self, op: str, other: Tensor | None = None) -> Tensor:
+    def _elemwise_op(
+        self, op: str, other: Tensor | None = None, *, reflected: bool = False
+    ) -> Tensor:
         if other is None:
             result = jl.broadcast(jl.seval(op), self._obj)
         else:
@@ -236,11 +288,9 @@ class Tensor(_Display, SparseArray):
             else:
                 other = jl.permutedims(other._obj, tuple(range(other.ndim, 0, -1)))
             # inverse swizzle, so `broadcast` appends new dims to the front
-            result = jl.broadcast(
-                jl.seval(op),
-                jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1))),
-                other,
-            )
+            this = jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1)))
+            args = (other, this) if reflected else (this, other)
+            result = jl.broadcast(jl.seval(op), *args)
             # swizzle back to the original order
             result = jl.permutedims(result, tuple(range(jl.ndims(result), 0, -1)))
 
@@ -319,6 +369,12 @@ class Tensor(_Display, SparseArray):
     @property
     def _order(self) -> tuple[int, ...]:
         return jl.typeof(self._obj).parameters[1]
+
+    @property
+    def T(self) -> Tensor:
+        if self.ndim != 2:
+            raise ValueError(f"`T` requires a 2-dimensional array, got {self.ndim=}.")
+        return self.permute_dims((1, 0))
 
     @property
     def mT(self) -> Tensor:
@@ -433,12 +489,7 @@ class Tensor(_Display, SparseArray):
         order = cls.preprocess_order(order_char, arr.ndim)
         inv_order = tuple(i - 1 for i in jl.invperm(order))
 
-        dtype = arr.dtype.type
-        if (
-            dtype == np.bool_
-        ):  # Fails with: Finch currently only supports isbits defaults
-            dtype = jl_dtypes.bool
-        fill_value = dtype(fill_value)
+        fill_value = _element_fill(arr.dtype, fill_value)
         lvl = Element(fill_value, arr.reshape(-1, order=order_char))
         for i in inv_order:
             lvl = Dense(lvl, arr.shape[i])
@@ -503,11 +554,10 @@ class Tensor(_Display, SparseArray):
     def construct_coo_jl_object(
         cls, coords, data, shape, order, fill_value=0.0
     ) -> JuliaObj:
-        assert len(coords) == 2
         ndim = len(shape)
         order = cls.preprocess_order(order, ndim)
 
-        lvl = jl.Element(data.dtype.type(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         ptr = jl.Vector[jl.Int]([1, len(data) + 1])
         tbl = tuple(jl.PlusOneVector(arr) for arr in coords)
 
@@ -532,11 +582,10 @@ class Tensor(_Display, SparseArray):
         assert len(shape) == 2
 
         data, indices, indptr = arg
-        dtype = data.dtype.type
         indices = jl.PlusOneVector(indices)
         indptr = jl.PlusOneVector(indptr)
 
-        lvl = jl.Element(dtype(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         return jl.swizzle(
             jl.Tensor(
                 jl.Dense(jl.SparseList(lvl, shape[0], indptr, indices), shape[1])
@@ -579,7 +628,6 @@ class Tensor(_Display, SparseArray):
         assert isinstance(arg, tuple) and len(arg) == 3
 
         data, indices_list, indptr_list = arg
-        dtype = data.dtype.type
 
         assert len(indices_list) == len(shape) - 1
         assert len(indptr_list) == len(shape) - 1
@@ -587,7 +635,7 @@ class Tensor(_Display, SparseArray):
         indices_list = [jl.PlusOneVector(i) for i in indices_list]
         indptr_list = [jl.PlusOneVector(i) for i in indptr_list]
 
-        lvl = jl.Element(dtype(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         for size, indices, indptr in zip(
             shape[:-1], indices_list, indptr_list, strict=False
         ):
@@ -1316,16 +1364,48 @@ def logaddexp(x1: Tensor, x2: Tensor, /) -> Tensor:
     return log(exp(x1) + exp(x2))
 
 
+def _truth(x: Tensor) -> Tensor:
+    """x as Bools, the truth the logical operators read (Finch.and and its
+    relatives take only Bools)."""
+    # eltype, unlike `dtype`, also reads lazy tensors (einop's operands).
+    if isinstance(x, Tensor) and jl.eltype(x._obj) == jl.Bool:
+        return x
+    return x != 0
+
+
+def _logical(op: str, x1: Tensor, x2: Tensor) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # The logical operators commute.
+    return _truth(x1)._elemwise_op(op, _truth(x2))
+
+
 def logical_and(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.and", x2)
+    return _logical("Finch.and", x1, x2)
 
 
 def logical_or(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.or", x2)
+    return _logical("Finch.or", x1, x2)
 
 
 def logical_xor(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.xor", x2)
+    return _logical("Finch.xor", x1, x2)
+
+
+def maximum(x1: Tensor, x2: Tensor, /) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # max commutes.
+    return x1._elemwise_op("max", x2)
+
+
+def minimum(x1: Tensor, x2: Tensor, /) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # min commutes.
+    return x1._elemwise_op("min", x2)
+
+
+def logical_not(x: Tensor, /) -> Tensor:
+    # einop's `not` and `logical_not` resolve to this function.
+    return x._elemwise_op("iszero")
 
 
 def power(x1: Tensor, x2: Tensor, /) -> Tensor:
