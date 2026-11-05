@@ -20,7 +20,7 @@ def vector_norm(
                 "is supported. Got: {axis}."
             )
 
-    result = Tensor(jl.Finch.norm(x._obj, ord))
+    result = Tensor(jl.Galley.norm(x._obj, ord))
     if keepdims:
         result = result[tuple(None for _ in range(x.ndim))]
     return result

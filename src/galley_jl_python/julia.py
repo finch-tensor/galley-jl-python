@@ -19,17 +19,16 @@ from . import _sysimage  # noqa: E402
 
 _sysimage.configure()
 
-# To change the version of Finch used, see the documentation for pyjuliapkg here: https://github.com/JuliaPy/pyjuliapkg
+# To change the version of Galley used, see the documentation for pyjuliapkg here: https://github.com/JuliaPy/pyjuliapkg
 # Use pyjuliapkg to modify the `juliapkg.json` file in the root of this repo.
-# You can also run `develop.py` to quickly use a local copy of Finch.jl.
+# You can also run `develop.py` to quickly use a local copy of Galley.jl.
 # An example development json is found in `juliapkg_dev.json`
 # Julia and all packages are pinned so the prebuilt sysimage matches; update the
-# pins with `scripts/sysimage/pin_julia_deps.py`. Finch is pinned to a git
-# commit (`rev`), which that script leaves alone.
+# pins with `scripts/sysimage/pin_julia_deps.py`.
 import juliacall as jc  # noqa: E402, F401
 from juliacall import Main as jl  # noqa: E402, F401
 
-jl.seval("using Finch")
+jl.seval("using Galley")
 jl.seval("using HDF5")
 jl.seval("using NPZ")
 jl.seval("using TensorMarket")

@@ -25,9 +25,9 @@ from .levels import (
 )
 from .typing import Device, DType, JuliaObj, OrderType, TupleOf3Arrays, spmatrix
 
-# Builds a 0-d Finch tensor in Julia so the element keeps its Julia eltype.
+# Builds a 0-d Galley tensor in Julia so the element keeps its Julia eltype.
 _scalar_to_0d = jl.seval(
-    "(T, fv, x) -> Finch.Tensor(Finch.Element{convert(T, fv)}(T[convert(T, x)]))"
+    "(T, fv, x) -> Galley.Tensor(Galley.Element{convert(T, fv)}(T[convert(T, x)]))"
 )
 
 
@@ -37,9 +37,53 @@ class SparseArray:
     """
 
 
+_WEAK_SCALAR_TYPE = """
+galley_weak_scalar_type(::Type{Bool}, ::Type{Bool}) = Bool
+galley_weak_scalar_type(::Type{T}, ::Type{Bool}) where {T} = T
+galley_weak_scalar_type(::Type{Bool}, ::Type{S}) where {S<:Integer} = S
+galley_weak_scalar_type(::Type{T}, ::Type{<:Integer}) where {T<:Number} = T
+galley_weak_scalar_type(
+    ::Type{T}, ::Type{<:AbstractFloat}
+) where {T<:Union{AbstractFloat,Complex}} = T
+galley_weak_scalar_type(::Type{T}, ::Type{<:Complex}) where {T<:Complex} = T
+galley_weak_scalar_type(
+    ::Type{T}, ::Type{<:Complex}
+) where {T<:AbstractFloat} = Complex{T}
+galley_weak_scalar_type(::Type, ::Type{S}) where {S} = S
+"""
+
+
+def _weak_scalar(element_type, value):
+    """A Python scalar operand as the Array API's weak scalars are: of the
+    array's type when it is of the same kind (an int with an integer array, a
+    float with a floating one), and otherwise of the default type (a float
+    with a Boolean array is a Float64). Reads lazy tensors' types too."""
+    if not hasattr(jl, "galley_weak_scalar_type"):
+        jl.seval(_WEAK_SCALAR_TYPE)
+    if isinstance(value, np.generic):
+        value = value.item()  # Julia reads np.bool_ as a Python object.
+    value_type = jl.typeof(jc.convert(jl.Any, value))
+    # jc.convert keeps the result in Julia; a Julia number returned to Python
+    # becomes a Python number, and so a Float64, again.
+    return jc.convert(jl.galley_weak_scalar_type(element_type, value_type), value)
+
+
+def _element_fill(dtype, fill_value):
+    """fill_value as an Element level's fill for values of dtype.
+
+    Finch requires an isbits fill. Julia converts NumPy's numeric scalars to
+    Julia numbers, but not `np.bool_` or 0-d arrays (which `sparse.COO` uses for
+    its fill), so both are normalized first, and Booleans become Python bools.
+    """
+    fill_value = np.asarray(fill_value).item()
+    if np.dtype(dtype) == np.bool_:
+        return bool(fill_value)
+    return np.dtype(dtype).type(fill_value)
+
+
 class Tensor(_Display, SparseArray):
     """
-    A wrapper class for Finch.Tensor and Finch.SwizzleArray.
+    A wrapper class for Galley.Tensor and Galley.SwizzleArray.
 
     Constructors
     ------------
@@ -58,7 +102,7 @@ class Tensor(_Display, SparseArray):
 
     Parameters
     ----------
-    obj : np.ndarray or scipy.sparse or Storage or Finch.SwizzleArray
+    obj : np.ndarray or scipy.sparse or Storage or Galley.SwizzleArray
         Input to construct a Tensor. It's a no-copy operation of for NumPy and
         SciPy input. For Storage it's levels' description with order. The order
         numbers the dimensions from the fastest to slowest.  The leaf nodes have
@@ -75,7 +119,7 @@ class Tensor(_Display, SparseArray):
     Returns
     -------
     Tensor
-        Python wrapper for Finch Tensor.
+        Python wrapper for a Galley Tensor.
 
     Examples
     --------
@@ -108,10 +152,10 @@ class Tensor(_Display, SparseArray):
         fill_value: np.number | None = None,
         copy: bool | None = None,
     ):
-        if isinstance(obj, int | float | complex | bool | list):
+        if isinstance(obj, int | float | complex | bool | list | tuple):
             if copy is False:
                 raise ValueError(
-                    "copy=False isn't supported for scalar inputs and Python lists"
+                    "copy=False isn't supported for scalar inputs and Python sequences"
                 )
             obj = np.asarray(obj)
         if fill_value is None:
@@ -130,11 +174,11 @@ class Tensor(_Display, SparseArray):
                 obj.order, self.get_lvl_ndim(obj.levels_descr._obj)
             )
             self._obj = jl.swizzle(jl.Tensor(obj.levels_descr._obj), *order)
-        elif jl.isa(obj, jl.Finch.Tensor):  # raw-Julia-object constructors
+        elif jl.isa(obj, jl.Galley.Tensor):  # raw-Julia-object constructors
             if copy:
                 self._raise_julia_copy_not_supported()
             self._obj = jl.swizzle(obj, *tuple(range(1, jl.ndims(obj) + 1)))
-        elif jl.isa(obj, jl.Finch.SwizzleArray) or jl.isa(obj, jl.Finch.LazyTensor):
+        elif jl.isa(obj, jl.Galley.SwizzleArray) or jl.isa(obj, jl.Galley.LazyTensor):
             if copy:
                 self._raise_julia_copy_not_supported()
             self._obj = obj
@@ -165,13 +209,50 @@ class Tensor(_Display, SparseArray):
         return self._elemwise_op("/", other)
 
     def __floordiv__(self, other):
-        return self._elemwise_op("Finch.fld_nothrow", other)
+        return self._elemwise_op("Galley.fld_nothrow", other)
 
     def __mod__(self, other):
-        return self._elemwise_op("Finch.mod_nothrow", other)
+        return self._elemwise_op("Galley.mod_nothrow", other)
 
     def __pow__(self, other):
         return self._elemwise_op("^", other)
+
+    # Reflected operators, for a scalar on the left (`1 - x`, `2 ** x`).
+    def __radd__(self, other):
+        return self._elemwise_op("+", other, reflected=True)
+
+    def __rsub__(self, other):
+        return self._elemwise_op("-", other, reflected=True)
+
+    def __rmul__(self, other):
+        return self._elemwise_op("*", other, reflected=True)
+
+    def __rtruediv__(self, other):
+        return self._elemwise_op("/", other, reflected=True)
+
+    def __rfloordiv__(self, other):
+        return self._elemwise_op("Galley.fld_nothrow", other, reflected=True)
+
+    def __rmod__(self, other):
+        return self._elemwise_op("Galley.mod_nothrow", other, reflected=True)
+
+    def __rpow__(self, other):
+        return self._elemwise_op("^", other, reflected=True)
+
+    def __rand__(self, other):
+        return self._elemwise_op("&", other, reflected=True)
+
+    def __ror__(self, other):
+        return self._elemwise_op("|", other, reflected=True)
+
+    def __rxor__(self, other):
+        return self._elemwise_op("xor", other, reflected=True)
+
+    def __rlshift__(self, other):
+        return self._elemwise_op("<<", other, reflected=True)
+
+    def __rrshift__(self, other):
+        return self._elemwise_op(">>", other, reflected=True)
 
     @compiled()
     def __matmul__(self, other: Tensor) -> Tensor:
@@ -227,20 +308,20 @@ class Tensor(_Display, SparseArray):
     def __ne__(self, other):
         return self._elemwise_op("!=", other)
 
-    def _elemwise_op(self, op: str, other: Tensor | None = None) -> Tensor:
+    def _elemwise_op(
+        self, op: str, other: Tensor | None = None, *, reflected: bool = False
+    ) -> Tensor:
         if other is None:
             result = jl.broadcast(jl.seval(op), self._obj)
         else:
             if np.isscalar(other):
-                other = jc.convert(self.dtype, other)
+                other = _weak_scalar(jl.eltype(self._obj), other)
             else:
                 other = jl.permutedims(other._obj, tuple(range(other.ndim, 0, -1)))
             # inverse swizzle, so `broadcast` appends new dims to the front
-            result = jl.broadcast(
-                jl.seval(op),
-                jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1))),
-                other,
-            )
+            this = jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1)))
+            args = (other, this) if reflected else (this, other)
+            result = jl.broadcast(jl.seval(op), *args)
             # swizzle back to the original order
             result = jl.permutedims(result, tuple(range(jl.ndims(result), 0, -1)))
 
@@ -280,9 +361,11 @@ class Tensor(_Display, SparseArray):
             key = _add_plus_one(key, self.shape)
 
         result = self._obj[key]
-        if jl.isa(result, jl.Finch.SwizzleArray) or jl.isa(result, jl.Finch.LazyTensor):
+        if jl.isa(result, jl.Galley.SwizzleArray) or jl.isa(
+            result, jl.Galley.LazyTensor
+        ):
             return Tensor(result)
-        if jl.isa(result, jl.Finch.Tensor):
+        if jl.isa(result, jl.Galley.Tensor):
             return Tensor(jl.swizzle(result, *range(1, jl.ndims(result) + 1)))
         # the Array API requires a 0-d array, not a scalar, for integer-only keys
         return Tensor(jl.swizzle(_scalar_to_0d(self.dtype, self.fill_value, result)))
@@ -311,7 +394,7 @@ class Tensor(_Display, SparseArray):
     def _is_dense(self) -> bool:
         lvl = self._obj.body.lvl
         for _ in self.shape:
-            if not jl.isa(lvl, jl.Finch.Dense):
+            if not jl.isa(lvl, jl.Galley.Dense):
                 return False
             lvl = lvl.lvl
         return True
@@ -319,6 +402,12 @@ class Tensor(_Display, SparseArray):
     @property
     def _order(self) -> tuple[int, ...]:
         return jl.typeof(self._obj).parameters[1]
+
+    @property
+    def T(self) -> Tensor:
+        if self.ndim != 2:
+            raise ValueError(f"`T` requires a 2-dimensional array, got {self.ndim=}.")
+        return self.permute_dims((1, 0))
 
     @property
     def mT(self) -> Tensor:
@@ -340,7 +429,7 @@ class Tensor(_Display, SparseArray):
         return self
 
     def is_computed(self) -> bool:
-        return not jl.isa(self._obj, jl.Finch.LazyTensor)
+        return not jl.isa(self._obj, jl.Galley.LazyTensor)
 
     @classmethod
     def preprocess_order(cls, order: OrderType, ndim: int) -> tuple[int, ...]:
@@ -370,7 +459,7 @@ class Tensor(_Display, SparseArray):
         while True:
             ndim += 1
             lvl = lvl.lvl
-            if jl.isa(lvl, jl.Finch.Element):
+            if jl.isa(lvl, jl.Galley.Element):
                 break
         return ndim
 
@@ -433,12 +522,7 @@ class Tensor(_Display, SparseArray):
         order = cls.preprocess_order(order_char, arr.ndim)
         inv_order = tuple(i - 1 for i in jl.invperm(order))
 
-        dtype = arr.dtype.type
-        if (
-            dtype == np.bool_
-        ):  # Fails with: Finch currently only supports isbits defaults
-            dtype = jl_dtypes.bool
-        fill_value = dtype(fill_value)
+        fill_value = _element_fill(arr.dtype, fill_value)
         lvl = Element(fill_value, arr.reshape(-1, order=order_char))
         for i in inv_order:
             lvl = Dense(lvl, arr.shape[i])
@@ -503,11 +587,10 @@ class Tensor(_Display, SparseArray):
     def construct_coo_jl_object(
         cls, coords, data, shape, order, fill_value=0.0
     ) -> JuliaObj:
-        assert len(coords) == 2
         ndim = len(shape)
         order = cls.preprocess_order(order, ndim)
 
-        lvl = jl.Element(data.dtype.type(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         ptr = jl.Vector[jl.Int]([1, len(data) + 1])
         tbl = tuple(jl.PlusOneVector(arr) for arr in coords)
 
@@ -532,11 +615,10 @@ class Tensor(_Display, SparseArray):
         assert len(shape) == 2
 
         data, indices, indptr = arg
-        dtype = data.dtype.type
         indices = jl.PlusOneVector(indices)
         indptr = jl.PlusOneVector(indptr)
 
-        lvl = jl.Element(dtype(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         return jl.swizzle(
             jl.Tensor(
                 jl.Dense(jl.SparseList(lvl, shape[0], indptr, indices), shape[1])
@@ -579,7 +661,6 @@ class Tensor(_Display, SparseArray):
         assert isinstance(arg, tuple) and len(arg) == 3
 
         data, indices_list, indptr_list = arg
-        dtype = data.dtype.type
 
         assert len(indices_list) == len(shape) - 1
         assert len(indptr_list) == len(shape) - 1
@@ -587,7 +668,7 @@ class Tensor(_Display, SparseArray):
         indices_list = [jl.PlusOneVector(i) for i in indices_list]
         indptr_list = [jl.PlusOneVector(i) for i in indptr_list]
 
-        lvl = jl.Element(dtype(fill_value), data)
+        lvl = jl.Element(_element_fill(data.dtype, fill_value), data)
         for size, indices, indptr in zip(
             shape[:-1], indices_list, indptr_list, strict=False
         ):
@@ -965,7 +1046,7 @@ def _reduce_sum_prod(
 
     result = Tensor(result)
 
-    if jl.isa(result._obj, jl.Finch.LazyTensor):
+    if jl.isa(result._obj, jl.Galley.LazyTensor):
         if dtype is not None:
             raise ValueError(
                 "`dtype` keyword for `sum` and `prod` in the lazy mode isn't supported"
@@ -1102,7 +1183,7 @@ def argmin(
     axis: int | None = None,
     keepdims: bool = False,
 ) -> Tensor:
-    return _reduce(x, jl.Finch.argmin_python, axis, keepdims)
+    return _reduce(x, jl.Galley.argmin_python, axis, keepdims)
 
 
 def argmax(
@@ -1112,7 +1193,7 @@ def argmax(
     axis: int | None = None,
     keepdims: bool = False,
 ) -> Tensor:
-    return _reduce(x, jl.Finch.argmax_python, axis, keepdims)
+    return _reduce(x, jl.Galley.argmax_python, axis, keepdims)
 
 
 def squeeze(
@@ -1162,7 +1243,7 @@ def eye(
     _validate_device(device)
     n_cols = n_rows if n_cols is None else n_cols
     dtype = jl_dtypes.float64 if dtype is None else dtype
-    tns = jl.Finch.eye_python(n_rows, n_cols, k, dtype(False))
+    tns = jl.Galley.eye_python(n_rows, n_cols, k, dtype(False))
     if format == "coo":
         return Tensor(tns)
     if format == "dense":
@@ -1316,16 +1397,48 @@ def logaddexp(x1: Tensor, x2: Tensor, /) -> Tensor:
     return log(exp(x1) + exp(x2))
 
 
+def _truth(x: Tensor) -> Tensor:
+    """x as Bools, the truth the logical operators read (Galley.and and its
+    relatives take only Bools)."""
+    # eltype, unlike `dtype`, also reads lazy tensors (einop's operands).
+    if isinstance(x, Tensor) and jl.eltype(x._obj) == jl.Bool:
+        return x
+    return x != 0
+
+
+def _logical(op: str, x1: Tensor, x2: Tensor) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # The logical operators commute.
+    return _truth(x1)._elemwise_op(op, _truth(x2))
+
+
 def logical_and(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.and", x2)
+    return _logical("Galley.and", x1, x2)
 
 
 def logical_or(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.or", x2)
+    return _logical("Galley.or", x1, x2)
 
 
 def logical_xor(x1: Tensor, x2: Tensor, /) -> Tensor:
-    return x1._elemwise_op("Finch.xor", x2)
+    return _logical("Galley.xor", x1, x2)
+
+
+def maximum(x1: Tensor, x2: Tensor, /) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # max commutes.
+    return x1._elemwise_op("max", x2)
+
+
+def minimum(x1: Tensor, x2: Tensor, /) -> Tensor:
+    if not isinstance(x1, Tensor):
+        x1, x2 = x2, x1  # min commutes.
+    return x1._elemwise_op("min", x2)
+
+
+def logical_not(x: Tensor, /) -> Tensor:
+    # einop's `not` and `logical_not` resolve to this function.
+    return x._elemwise_op("iszero")
 
 
 def power(x1: Tensor, x2: Tensor, /) -> Tensor:

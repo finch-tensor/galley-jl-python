@@ -73,7 +73,7 @@ def _recurse_iter_compute(x: IterObj, /, *, compute_kwargs: dict[str, Any]) -> I
     jl_len = len(jl_computed)
     # This doesn't return an iterable of arrays -- only a single array
     # for `len(jl_computed) == 1`
-    jl_computed = jl.Finch.compute(*jl_computed, **compute_kwargs)
+    jl_computed = jl.Galley.compute(*jl_computed, **compute_kwargs)
     if jl_len == 1:
         jl_computed = (jl_computed,)
 
@@ -129,16 +129,16 @@ class AbstractScheduler:
 
 class GalleyScheduler(AbstractScheduler):
     def get_julia_scheduler(self) -> JuliaObj:
-        return jl.Finch.galley_scheduler(verbose=self.verbose)
+        return jl.Galley.galley_scheduler(verbose=self.verbose)
 
 
 class DefaultScheduler(AbstractScheduler):
     def get_julia_scheduler(self) -> JuliaObj:
-        return jl.Finch.default_scheduler(verbose=self.verbose)
+        return jl.Galley.default_scheduler(verbose=self.verbose)
 
 
 def set_optimizer(opt: AbstractScheduler) -> None:
-    jl.Finch.set_scheduler_b(opt.get_julia_scheduler())
+    jl.Galley.set_scheduler_b(opt.get_julia_scheduler())
 
 
 set_optimizer(GalleyScheduler())
@@ -148,7 +148,7 @@ def lazy(tensor: Tensor) -> Tensor:
     from .tensor import Tensor
 
     if tensor.is_computed():
-        return Tensor(jl.Finch.LazyTensor(tensor._obj))
+        return Tensor(jl.Galley.LazyTensor(tensor._obj))
     return tensor
 
 
@@ -159,9 +159,9 @@ def compute(
 
     if not tensor.is_computed():
         if opt is None:
-            return Tensor(jl.Finch.compute(tensor._obj, tag=tag))
+            return Tensor(jl.Galley.compute(tensor._obj, tag=tag))
         return Tensor(
-            jl.Finch.compute(
+            jl.Galley.compute(
                 tensor._obj,
                 verbose=opt.verbose,
                 ctx=opt.get_julia_scheduler(),
