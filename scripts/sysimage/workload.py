@@ -26,17 +26,6 @@ def run_ops(A, B, C, v):
     A[1:3, :]
     A.todense()
 
-    @gl.jit
-    def sum_abc(A, B, C):
-        return gl.sum(gl.matmul(gl.matmul(A, B), C))
-
-    @gl.jit
-    def chain(A, B, C):
-        return gl.add(gl.matmul(A, B), C)
-
-    sum_abc(A, B, C)
-    chain(A, B, C)
-
 
 def main():
     rng = np.random.default_rng(0)
