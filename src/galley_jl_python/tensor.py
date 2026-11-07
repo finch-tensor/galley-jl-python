@@ -73,10 +73,10 @@ def _scalar_tensor(value) -> Tensor:
     return Tensor(jl.swizzle(_scalar_to_0d(jl.typeof(value), value, value)))
 
 
-# `where` picks with `ifelse` after promoting both branches to one type.
-# Galley types its output after the fill it computes, `ifelse` of the
-# operands' fills, so `ifelse` alone would give an Int64 result for an Int64
-# fill even when the other branch is a float.
+# `where` picks with `ifelse` after promoting both branches to one type, as
+# the Array API requires. Julia's `ifelse` returns whichever branch it picks
+# unchanged, so on its own it would give a Union{Float64, Int64} result for a
+# float branch and an integer one.
 _where_op = jl.seval("(c, a, b) -> ifelse(c, promote(a, b)...)")
 
 
@@ -329,13 +329,7 @@ class Tensor(_Display, SparseArray):
         else:
             if np.isscalar(other):
                 other = _weak_scalar(jl.eltype(self._obj), other)
-                # Galley rewrites `x * 0`, `x & false`, `x + Inf` and the like
-                # to the bare constant and loses x's shape
-                # (https://github.com/finch-tensor/Finch.jl/issues/820). It
-                # doesn't fold a 0-d tensor, so annihilating scalars become one.
-                if jl.Galley.isannihilator(jl.Galley.DefaultAlgebra(), fn, other):
-                    other = _scalar_tensor(other)
-            if isinstance(other, Tensor):
+            else:
                 other = jl.permutedims(other._obj, tuple(range(other.ndim, 0, -1)))
             # inverse swizzle, so `broadcast` appends new dims to the front
             this = jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1)))
