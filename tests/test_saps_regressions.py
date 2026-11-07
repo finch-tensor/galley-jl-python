@@ -1,5 +1,7 @@
 """Regressions found running the Sparse Array Programming Suite (SAPS)."""
 
+import pytest
+
 import numpy as np
 import scipy.sparse as sps
 from numpy.testing import assert_equal
@@ -103,3 +105,51 @@ def test_scalar_operands_of_lazy_tensors():
     # msbfs, model_counting: einop's operands are lazy, and have no dtype.
     x = galley.asarray(np.array([1.0, 2.0]))
     assert_equal(_dense(galley.compute(galley.lazy(x) * 2)), [2.0, 4.0])
+
+
+def test_annihilating_scalars_keep_shape():
+    # simhash_ann: Galley folded `offsets * 0` to a bare 0, of shape (1,).
+    i = galley.asarray(np.arange(3))
+    assert_equal(_dense(i * 0), [0, 0, 0])
+    assert_equal(_dense(0 * i), [0, 0, 0])
+    assert _dense(i * 0).dtype == np.int64
+    assert_equal(_dense(i * 0.0), [0.0, 0.0, 0.0])
+    assert_equal(_dense(galley.compute(galley.lazy(i) * 0)), [0, 0, 0])
+    f = galley.asarray(np.array([1.0, 2.0]))
+    assert_equal(_dense(f + np.inf), [np.inf, np.inf])
+    assert_equal(_dense(galley.minimum(f, -np.inf)), [-np.inf, -np.inf])
+    b = galley.asarray(np.array([True, False]))
+    assert_equal(_dense(b & False), [False, False])
+    assert_equal(_dense(b | True), [True, True])
+    s = galley.asarray(sps.csr_matrix(np.array([[1.0, 0.0], [0.0, 2.0]])))
+    assert_equal(_dense(s * 0), np.zeros((2, 2)))
+
+
+def test_where_promotes_branches():
+    # jacobi_pcg: `replace(r / M, nan, 0)` typed the result after the fill,
+    # ifelse(isnan(NaN), 0, NaN) = 0, and stored r / M's floats as Int64s.
+    r = galley.asarray(sps.csr_matrix(np.array([[1.0, 0.0], [0.0, 3.0]])))
+    m = galley.asarray(sps.csr_matrix(np.array([[2.0, 0.0], [0.0, 3.0]])))
+    q = r / m
+    for zero in (0, galley.asarray(0)):
+        result = _dense(galley.where(galley.isnan(q), zero, q))
+        assert result.dtype == np.float64
+        assert_equal(result, [[0.5, 0.0], [0.0, 1.0]])
+    # A dense float array has a 0.0 fill, so x / x has a NaN one too, and its
+    # values were truncated silently.
+    x = galley.asarray(np.array([1.0, 2.0]))
+    result = _dense(galley.where(galley.isnan(x / x), 0, x / (2 * x)))
+    assert result.dtype == np.float64
+    assert_equal(result, [0.5, 0.5])
+
+
+def test_where_scalars_promote_weakly():
+    cond = galley.asarray(np.array([True, False]))
+    i = galley.asarray(np.array([1, 2]))
+    assert _dense(galley.where(cond, i, 7)).dtype == np.int64
+    assert_equal(_dense(galley.where(cond, 7, i)), [7, 2])
+    assert_equal(_dense(galley.where(cond, i, 0.5)), [1.0, 0.5])
+    f = galley.asarray(np.array([1.0, 2.0], dtype=np.float32))
+    assert _dense(galley.where(cond, f, 0)).dtype == np.float32
+    with pytest.raises(TypeError):
+        galley.where(cond, 0, 1)

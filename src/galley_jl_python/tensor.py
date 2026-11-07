@@ -68,6 +68,18 @@ def _weak_scalar(element_type, value):
     return jc.convert(jl.galley_weak_scalar_type(element_type, value_type), value)
 
 
+def _scalar_tensor(value) -> Tensor:
+    """A Julia scalar as a 0-d tensor whose fill is the scalar itself."""
+    return Tensor(jl.swizzle(_scalar_to_0d(jl.typeof(value), value, value)))
+
+
+# `where` picks with `ifelse` after promoting both branches to one type, as
+# the Array API requires. Julia's `ifelse` returns whichever branch it picks
+# unchanged, so on its own it would give a Union{Float64, Int64} result for a
+# float branch and an integer one.
+_where_op = jl.seval("(c, a, b) -> ifelse(c, promote(a, b)...)")
+
+
 def _element_fill(dtype, fill_value):
     """fill_value as an Element level's fill for values of dtype.
 
@@ -311,8 +323,9 @@ class Tensor(_Display, SparseArray):
     def _elemwise_op(
         self, op: str, other: Tensor | None = None, *, reflected: bool = False
     ) -> Tensor:
+        fn = jl.seval(op)
         if other is None:
-            result = jl.broadcast(jl.seval(op), self._obj)
+            result = jl.broadcast(fn, self._obj)
         else:
             if np.isscalar(other):
                 other = _weak_scalar(jl.eltype(self._obj), other)
@@ -321,7 +334,7 @@ class Tensor(_Display, SparseArray):
             # inverse swizzle, so `broadcast` appends new dims to the front
             this = jl.permutedims(self._obj, tuple(range(self.ndim, 0, -1)))
             args = (other, this) if reflected else (this, other)
-            result = jl.broadcast(jl.seval(op), *args)
+            result = jl.broadcast(fn, *args)
             # swizzle back to the original order
             result = jl.permutedims(result, tuple(range(jl.ndims(result), 0, -1)))
 
@@ -987,7 +1000,20 @@ def astype(x: Tensor, dtype: DType, /, *, copy: bool = True) -> Tensor:
     return Tensor(jl.swizzle(result, *x.get_order(zero_indexing=False)))
 
 
-def where(condition: Tensor, x1: Tensor, x2: Tensor, /) -> Tensor:
+def where(
+    condition: Tensor,
+    x1: Tensor | complex,
+    x2: Tensor | complex,
+    /,
+) -> Tensor:
+    # A Python scalar takes the other branch's type when it is of the same
+    # kind, as the Array API's weak scalars do.
+    if np.isscalar(x1) and np.isscalar(x2):
+        raise TypeError("where needs at least one of x1 and x2 to be an array.")
+    if np.isscalar(x1):
+        x1 = _scalar_tensor(_weak_scalar(jl.eltype(x2._obj), x1))
+    if np.isscalar(x2):
+        x2 = _scalar_tensor(_weak_scalar(jl.eltype(x1._obj), x2))
     axis_cond, axis_x1, axis_x2 = (
         range(condition.ndim, 0, -1),
         range(x1.ndim, 0, -1),
@@ -995,7 +1021,7 @@ def where(condition: Tensor, x1: Tensor, x2: Tensor, /) -> Tensor:
     )
     # inverse swizzle, so `broadcast` appends new dims to the front
     result = jl.broadcast(
-        jl.ifelse,
+        _where_op,
         jl.permutedims(condition._obj, tuple(axis_cond)),
         jl.permutedims(x1._obj, tuple(axis_x1)),
         jl.permutedims(x2._obj, tuple(axis_x2)),
