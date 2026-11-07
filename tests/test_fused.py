@@ -73,3 +73,13 @@ def test_jit_while_loop_uses_galley_tensors():
     B = gl.Tensor(np.array([[1, 0], [0, 1]]))
 
     assert_galley_allclose(opt_fn(A, B, 3), A.todense() + 3 * B.todense())
+
+
+def test_jit_scalar_operand_uses_galley_tensors():
+    @gl.jit
+    def opt_fn(A):
+        return A * 2 + A
+
+    A = gl.Tensor(np.array([[1, 2], [3, 4]]))
+
+    assert_galley_allclose(opt_fn(A), 3 * A.todense())

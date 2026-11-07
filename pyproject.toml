@@ -15,7 +15,6 @@ dependencies = [
     # To move: loosen this and the CondaPkg pin, then follow pin_julia_deps.py.
     "juliacall (>=0.9.36,<0.9.37)",
     "lark (>=1.3.0,<2.0.0)",
-    "finch-tensor>=0.7.0,<0.8.0",
 ]
 
 [tool.poetry]

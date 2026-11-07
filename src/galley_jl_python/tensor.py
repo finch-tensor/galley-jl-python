@@ -385,7 +385,8 @@ class Tensor(_Display, SparseArray):
 
     @property
     def dtype(self) -> DType:
-        return jl.eltype(self._obj.body)
+        # `eltype` of the swizzle (not its body) also works for lazy tensors.
+        return jl.eltype(self._obj)
 
     @property
     def ndim(self) -> int:
