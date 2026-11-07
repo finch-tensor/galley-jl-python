@@ -81,10 +81,6 @@
       "uuid": "1a297f60-69ca-5386-bcde-b61e274b549b",
       "version": "=1.17.1"
     },
-    "Finch": {
-      "uuid": "9177782c-1635-4eb9-9bfb-d9dfa25e6bce",
-      "version": "=1.8.0"
-    },
     "GPUArraysCore": {
       "uuid": "46192b85-c4d5-4398-a991-12ede77f4527",
       "version": "=0.2.1"
