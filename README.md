@@ -151,7 +151,7 @@ the worker count on machines with little memory.
 To run a subset, call pytest in the test environment directly:
 
 ```bash
-pixi run -e test pytest tests/test_fused.py
+pixi run -e test pytest tests/test_ops.py
 ```
 
 Array API tests are included in `tests/test_array_api.py`. These tests invoke
